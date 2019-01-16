@@ -1,0 +1,5 @@
+g++ -std=c++11 ClientSocket.cpp ClientSocket.h Socket.cpp Socket.h simple_client_main.cpp -o simple_client
+g++ -std=c++11 ServerSocket.cpp ServerSocket.h Socket.cpp Socket.h simple_server_main.cpp -o simple_server
+
+run server first    ./server
+run client second   ./client
