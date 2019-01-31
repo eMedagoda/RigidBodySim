@@ -59,7 +59,10 @@ void Vehicle::Integrate(VectorXd& X, VectorXd U, double DT)
     VectorXd Xdot4 = StateRates(X + Cn, U);
     VectorXd Dn = Xdot4 * DT;
 
+    // Runge-Kutta 4th order integration
     X = X + (An + 2.0*Bn + 2.0*Cn + Dn)/6.0;
+    
+    PiMinusPi(X(8));
 }
 
 void Vehicle::Trim(VectorXd& X0, 
@@ -330,4 +333,16 @@ MatrixXd Vehicle::DirectionCosineMatrix(double phi, double theta, double psi)
 
 }
 
-
+void Vehicle::PiMinusPi(double& input)
+{
+    
+    if (input <= -PI)
+    {
+        input += 2.0 * PI;
+    }
+    else if (input >= PI)
+    {
+        input -= 2.0 * PI;
+    }
+    
+}

@@ -1,10 +1,10 @@
-
 #include <cmath>
 
 #ifndef vehicle_parameters__H
 #define vehicle_parameters__H
 
 // math constants
+const double PI = acos(-1.0);
 const double DEG2RAD = acos(-1.0)/180.0;
 const double RAD2DEG = 1.0/DEG2RAD;
 
@@ -16,7 +16,7 @@ const double R_EB = R_EA * (1.0 - FLATTENING); // earth semi-minor axis
 const double ECC = sqrt(R_EA*R_EA - R_EB*R_EB)/R_EA; // eccentricity
 
 // vehicle properties
-const double MASS = 3.0;
+const double MASS = 4.0;
 const double HEIGHT = 0.15;
 const double WIDTH = 0.15;
 const double DEPTH = 0.3;

@@ -6,7 +6,8 @@ include_directories(Eigen-3.3)
 add_executable(
     RigidBodySim 
     main.cpp 
-    Vehicle.cpp 
+    Vehicle.cpp
+    PID.cpp
     Socket.cpp
     ClientSocket.cpp)
     

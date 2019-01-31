@@ -5,18 +5,22 @@ function plot_data(col)
 M = csvread("build/output.csv");
 
 figure(1)
-subplot(3,1,1)
+subplot(4,1,1)
 plot(M(:,1),M(:,2),col,'Linewidth',2)
 hold on
 title('u')
-subplot(3,1,2)
+subplot(4,1,2)
 plot(M(:,1),M(:,3),col,'Linewidth',2)
 hold on
 title('v')
-subplot(3,1,3)
+subplot(4,1,3)
 plot(M(:,1),M(:,4),col,'Linewidth',2)
 hold on
 title('w')
+subplot(4,1,4)
+plot(M(:,1),sqrt(M(:,2).*M(:,2) + M(:,3).*M(:,3) + M(:,4).*M(:,4)),col,'Linewidth',2)
+hold on
+title('V')
 
 figure(2)
 subplot(3,1,1)
@@ -70,6 +74,6 @@ plot(M(:,1),M(:,15)*180/pi,col,'Linewidth',2)
 hold on
 title('Lat')
 subplot(3,1,3)
-plot(M(:,1),M(:,16)*180/pi,col,'Linewidth',2)
+plot(M(:,1),M(:,16),col,'Linewidth',2)
 hold on
 title('Alt')
