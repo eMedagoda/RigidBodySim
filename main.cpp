@@ -19,7 +19,7 @@ int main()
     Vehicle Veh;
 
     double DT = 0.1;
-    double TIME = 60;
+    double TIME = 100;
     double T_SIZE = TIME/DT;
     
     int n_out = 15;    // number of tracked outputs (states)
@@ -99,16 +99,16 @@ int main()
         
         if (i > (10.0/DT))
         {
-            VfC = 5.0;
-            VvC = -3.0;
+            VfC = 6.0;
+            VvC = 0.0;
             phiC = 0.0 * DEG2RAD;
             thetaC = 0.0 * DEG2RAD;
-            dpsiC = 0.0 * DEG2RAD;
+            dpsiC = 15.0 * DEG2RAD;
         }       
         
-        if (i > (20.0/DT))
+        if (i > (30.0/DT))
         {
-            VfC = 0.0;
+            VfC = 6.0;
             VvC = 0.0;
             phiC = 0.0 * DEG2RAD;
             thetaC = 0.0 * DEG2RAD;
@@ -123,24 +123,30 @@ int main()
         //--------------------------- CONTROL SEGMENT --------------------------------                                         
 
         // forward speed control
-        PID u_cont(10.0, 0.0, 0.1);
+        PID u_cont(10.0, 0.1, 0.0);
         dU(0) = u_cont.Control(VbC(0), X(0), DT);        
         
         // vertical speed control
-        PID w_cont(10.0, 0.0, 0.1);
-        dU(2) = w_cont.Control(VbC(2), X(2), DT);
+        PID w_cont(10.0, 0.1, 0.0);
+        dU(2) = w_cont.Control(VbC(2), X(2), DT);         
         
-        // roll regulator
-        double e_phi = phiC - X(6);
-        dU(3) = 0.01 * e_phi + 0.02 * (0.0 - X(3)) + 0.0001 * (VbC(1) - X(1));
+        PID phi_cont(0.01, 0.0, 0.0);
+        PID p_cont(0.05, 0.0, 0.0);
+        PID v_cont(0.0001, 0.0, 0.0);        
+        double phi_out = phi_cont.Control(phiC, X(6), DT);
+        double p_out = p_cont.Control(0.0, X(3), DT);
+        double v_out = v_cont.Control(VbC(1), X(1), DT);        
+        dU(3) = phi_out + p_out + v_out;
         
-        // pitch control
-        double e_theta = thetaC - X(7);
-        dU(4) = 0.003 * e_theta + 0.01 * (0.0 - X(4));        
+        PID theta_cont(0.003, 0.0, 0.0);
+        PID q_cont(0.01, 0.0, 0.0);        
+        double pitch_out = theta_cont.Control(thetaC, X(7), DT);
+        double q_out = q_cont.Control(0.0, X(4), DT);
+        dU(4) = pitch_out + q_out;        
         
-        // heading controller
-        double e_dpsi = dpsiC - X(5);  
-        dU(5) = 0.02 * e_dpsi;
+        PID dpsi_cont(0.02, 0.0, 0.0);        
+        double dpsi_out = dpsi_cont.Control(dpsiC, X(5), DT);
+        dU(5) = dpsi_out;
         
         U = U_Trim + dU;
             
