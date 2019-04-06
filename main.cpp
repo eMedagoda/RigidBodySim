@@ -99,19 +99,19 @@ int main()
         
         if (i > (10.0/DT))
         {
-            VfC = 6.0;
+            VfC = 0.0;
             VvC = 0.0;
             phiC = 0.0 * DEG2RAD;
-            thetaC = 0.0 * DEG2RAD;
-            dpsiC = 15.0 * DEG2RAD;
+            thetaC = -10.0 * DEG2RAD;
+            dpsiC = 0.0 * DEG2RAD;
         }       
         
-        if (i > (30.0/DT))
+        if (i > (40.0/DT))
         {
-            VfC = 6.0;
+            VfC = 0.0;
             VvC = 0.0;
             phiC = 0.0 * DEG2RAD;
-            thetaC = 0.0 * DEG2RAD;
+            thetaC = -10.0 * DEG2RAD;
             dpsiC = 0.0 * DEG2RAD;
         } 
         
@@ -123,36 +123,39 @@ int main()
         //--------------------------- CONTROL SEGMENT --------------------------------                                         
 
         // forward speed control
-        PID u_cont(10.0, 0.1, 0.0);
-        dU(0) = u_cont.Control(VbC(0), X(0), DT);        
+        PID u_cont(50.0, 10.0, 0.0);
+        dU(0) = u_cont.Control(VbC(0), X(0), DT); // TODO: look at integrator implementation  
         
         // vertical speed control
-        PID w_cont(10.0, 0.1, 0.0);
+        PID w_cont(50.0, 10.0, 0.0);
         dU(2) = w_cont.Control(VbC(2), X(2), DT);         
         
-        PID phi_cont(0.01, 0.0, 0.0);
-        PID p_cont(0.05, 0.0, 0.0);
-        PID v_cont(0.0001, 0.0, 0.0);        
-        double phi_out = phi_cont.Control(phiC, X(6), DT);
-        double p_out = p_cont.Control(0.0, X(3), DT);
-        double v_out = v_cont.Control(VbC(1), X(1), DT);        
-        dU(3) = phi_out + p_out + v_out;
+//         // roll control
+//         PID phi_cont(0.01, 0.0, 0.0); // roll angle control
+//         PID p_cont(0.05, 0.0, 0.0); // roll rate control (roll damping)
+//         PID v_cont(0.0001, 0.0, 0.0);        
+//         double phi_out = phi_cont.Control(phiC, X(6), DT);
+//         double p_out = p_cont.Control(0.0, X(3), DT);
+//         double v_out = v_cont.Control(VbC(1), X(1), DT); // manage lateral drift (TODO: update aerodynamics to model this better) 
+//         dU(3) = phi_out + p_out + v_out;
         
-        PID theta_cont(0.003, 0.0, 0.0);
-        PID q_cont(0.01, 0.0, 0.0);        
+        // pitch control
+        PID theta_cont(0.01, 0.0, 0.0); // pitch angle control
+        PID q_cont(0.05, 0.0, 0.0); // pitch rate control (pitch damping)
         double pitch_out = theta_cont.Control(thetaC, X(7), DT);
         double q_out = q_cont.Control(0.0, X(4), DT);
         dU(4) = pitch_out + q_out;        
         
-        PID dpsi_cont(0.02, 0.0, 0.0);        
-        double dpsi_out = dpsi_cont.Control(dpsiC, X(5), DT);
-        dU(5) = dpsi_out;
+//         // yaw rate control
+//         PID dpsi_cont(0.02, 0.0, 0.0);        
+//         double dpsi_out = dpsi_cont.Control(dpsiC, X(5), DT);
+//         dU(5) = dpsi_out;
         
         U = U_Trim + dU;
             
         //----------------------------------------------------------------------------                
        
-        std::cout << std::setprecision(2) 
+/*        std::cout << std::setprecision(2) 
            << std::fixed
            << (i + 1)*DT << ", " 
            << X(0) << ", " 
@@ -173,7 +176,14 @@ int main()
            << U(2) << ", " 
            << U(3) << ", " 
            << U(4) << ", " 
-           << U(5) <<  std::endl;        
+           << U(5) <<  std::endl; */
+
+       std::cout << std::setprecision(2) 
+           << std::fixed
+           << VbC(0) << ", " << X(0) << ", "
+           << VbC(1) << ", " << X(1) << ", "
+           << VbC(2) << ", " << X(2) << ", "
+           << std::endl;           
        
         myfile << (i + 1)*DT << ", " 
            << X(0) << ", " 

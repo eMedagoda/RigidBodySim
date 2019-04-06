@@ -77,3 +77,8 @@ subplot(3,1,3)
 plot(M(:,1),M(:,16),col,'Linewidth',2)
 hold on
 title('Alt')
+
+figure(6)
+plot(M(:,12),M(:,11),col,'Linewidth',2)
+hold on
+
