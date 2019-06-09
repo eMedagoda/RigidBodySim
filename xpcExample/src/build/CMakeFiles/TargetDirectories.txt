@@ -1,0 +1,3 @@
+/home/eran/Documents/Misc/XPlaneConnect/C/xpcExample/xpcExample/src/build/CMakeFiles/rebuild_cache.dir
+/home/eran/Documents/Misc/XPlaneConnect/C/xpcExample/xpcExample/src/build/CMakeFiles/edit_cache.dir
+/home/eran/Documents/Misc/XPlaneConnect/C/xpcExample/xpcExample/src/build/CMakeFiles/main.dir

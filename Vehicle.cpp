@@ -1,4 +1,5 @@
 #include "Vehicle.h"
+#include "Utils.h"
 #include "VehicleParameters.h"
 #include <cmath>
 
@@ -47,6 +48,8 @@ void Vehicle::Linearise(VectorXd X, VectorXd U, MatrixXd& A, MatrixXd& B)
 
 void Vehicle::Integrate(VectorXd& X, VectorXd U, double DT)
 {
+    Utils Utils;
+    
     VectorXd Xdot1 = StateRates(X, U);	
     VectorXd An = Xdot1 * DT;
 
@@ -62,7 +65,7 @@ void Vehicle::Integrate(VectorXd& X, VectorXd U, double DT)
     // Runge-Kutta 4th order integration
     X = X + (An + 2.0*Bn + 2.0*Cn + Dn)/6.0;
     
-    PiMinusPi(X(8));
+    Utils.PiMinusPi(X(8));
 }
 
 void Vehicle::Trim(VectorXd& X0, 
@@ -208,17 +211,19 @@ VectorXd Vehicle::StateRates(VectorXd X, VectorXd U)
     VectorXd Xdot(15);
     Xdot.setZero();
     
+    Utils Utils;
+    
     // calculate body axis rotational inertias
-    double c0 =Ixx*Izz-Ixz*Ixz;
-    double c1 =Izz/c0;
-    double c2 =Ixz/c0;
-    double c3 =c2*(Ixx-Iyy+Izz);
-    double c4 =c1*(Iyy-Izz)-c2*Ixz;
-    double c5 =1.0/Iyy;
-    double c6 =c5*Ixz;
-    double c7 =c5*(Izz-Ixx);
-    double c8 =Ixx/c0;
-    double c9 =c8*(Ixx-Iyy)+c2*Ixz;
+    double c0 = Ixx*Izz-Ixz*Ixz;
+    double c1 = Izz/c0;
+    double c2 = Ixz/c0;
+    double c3 = c2*(Ixx-Iyy+Izz);
+    double c4 = c1*(Iyy-Izz)-c2*Ixz;
+    double c5 = 1.0/Iyy;
+    double c6 = c5*Ixz;
+    double c7 = c5*(Izz-Ixx);
+    double c8 = Ixx/c0;
+    double c9 = c8*(Ixx-Iyy)+c2*Ixz;
     
     double u     = X(0);
     double v     = X(1);
@@ -234,9 +239,17 @@ VectorXd Vehicle::StateRates(VectorXd X, VectorXd U)
     double lat   = X(13);
     double alt   = X(14);
 
+    // course lateral drag model
+    double ydrag  = 5.0 * v * v;;
+    
+    if (v < 0.0)
+    {
+        ydrag = -ydrag;
+    }
+    
     // force and moment inputs
     double F_x = U(0);
-    double F_y = U(1);
+    double F_y = U(1) - ydrag;
     double F_z = U(2);
     double M_x = U(3);
     double M_y = U(4);
@@ -255,7 +268,7 @@ VectorXd Vehicle::StateRates(VectorXd X, VectorXd U)
     double psidot   = q*sin(phi)*(1.0/cos(theta)) + r*cos(phi)*(1.0/cos(theta));
 
     // navigation to body
-    MatrixXd C_bn = DirectionCosineMatrix(phi, theta, psi);
+    MatrixXd C_bn = Utils.DirectionCosineMatrix(phi, theta, psi);
 
     // position rates (navigation frame)
     VectorXd SpeedVec(3);
@@ -274,75 +287,4 @@ VectorXd Vehicle::StateRates(VectorXd X, VectorXd U)
     
     return Xdot;
 
-}
-
-MatrixXd Vehicle::L1(double phi)
-{
-    MatrixXd Cx(3,3);
-    
-    // rotation about x-axis
-    Cx << 1.0, 0.0, 0.0,
-          0.0,  cos(phi),  sin(phi),
-          0.0,  -sin(phi), cos(phi);
-          
-    return Cx; 
-    
-}
-
-MatrixXd Vehicle::L2(double theta)
-{
-    MatrixXd Cy(3,3);
-    
-    // rotation about y-axis
-    Cy << cos(theta), 0.0,  -sin(theta),
-          0.0, 1.0, 0.0,
-          sin(theta), 0.0, cos(theta);
-          
-    return Cy; 
-    
-}
-
-MatrixXd Vehicle::L3(double psi)
-{
-    MatrixXd Cz(3,3);
-        
-    // rotation about z-axis
-    Cz << cos(psi),  sin(psi), 0.0,
-         -sin(psi),  cos(psi), 0.0,
-         0.0, 0.0, 1.0;
-          
-    return Cz; 
-    
-}
-
-MatrixXd Vehicle::DirectionCosineMatrix(double phi, double theta, double psi)
-{
-    // rotational transformation about z-axis
-    MatrixXd C3 = L3(psi);
-
-    // rotational transformation about y-axis
-    MatrixXd C2 = L2(theta);
-
-    // rotational transformation about x-axis
-    MatrixXd C1 = L1(phi);
-
-    // transformation matrix (navigation frame to body frame)
-    MatrixXd C_bn = C1 * C2 * C3;
-    
-    return C_bn;
-
-}
-
-void Vehicle::PiMinusPi(double& input)
-{
-    
-    if (input <= -PI)
-    {
-        input += 2.0 * PI;
-    }
-    else if (input >= PI)
-    {
-        input -= 2.0 * PI;
-    }
-    
 }

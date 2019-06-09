@@ -65,15 +65,53 @@ hold on
 title('Z')
 
 figure(5)
-subplot(3,1,1)
-plot(M(:,1),M(:,14)*180/pi,col,'Linewidth',2)
+subplot(3,2,1)
+plot(M(:,1),M(:,20),col,'Linewidth',2)
 hold on
-title('Lon')
-subplot(3,1,2)
-plot(M(:,1),M(:,15)*180/pi,col,'Linewidth',2)
+title('a_{x}')
+subplot(3,2,3)
+plot(M(:,1),M(:,21),col,'Linewidth',2)
 hold on
-title('Lat')
-subplot(3,1,3)
-plot(M(:,1),M(:,16),col,'Linewidth',2)
+title('a_{y}')
+subplot(3,2,5)
+plot(M(:,1),M(:,22),col,'Linewidth',2)
 hold on
-title('Alt')
+title('a_{z}')
+subplot(3,2,2)
+plot(M(:,1),M(:,23)*180/pi,col,'Linewidth',2)
+hold on
+title('g_{p}')
+subplot(3,2,4)
+plot(M(:,1),M(:,24)*180/pi,col,'Linewidth',2)
+hold on
+title('g_{q}')
+subplot(3,2,6)
+plot(M(:,1),M(:,25)*180/pi,col,'Linewidth',2)
+hold on
+title('g_{r}')
+
+figure(6)
+subplot(3,2,1)
+plot(M(:,1),M(:,29),col,'Linewidth',2)
+hold on
+title('N')
+subplot(3,2,3)
+plot(M(:,1),M(:,30),col,'Linewidth',2)
+hold on
+title('E')
+subplot(3,2,5)
+plot(M(:,1),M(:,31),col,'Linewidth',2)
+hold on
+title('D')
+subplot(3,2,2)
+plot(M(:,1),M(:,32)*180/pi,col,'Linewidth',2)
+hold on
+title('Vn')
+subplot(3,2,4)
+plot(M(:,1),M(:,33)*180/pi,col,'Linewidth',2)
+hold on
+title('Ve')
+subplot(3,2,6)
+plot(M(:,1),M(:,34)*180/pi,col,'Linewidth',2)
+hold on
+title('Vd')

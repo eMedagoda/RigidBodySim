@@ -1,0 +1,40 @@
+#IncludeRegexLine: ^[ 	]*#[ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/home/eran/Documents/SimulationDevelopment/RigidBodySim/xpcExample/src/main.cpp
+stdio.h
+-
+stdlib.h
+-
+string.h
+-
+time.h
+-
+xplaneConnect.h
+/home/eran/Documents/SimulationDevelopment/RigidBodySim/xpcExample/src/xplaneConnect.h
+iostream
+-
+Windows.h
+-
+
+/home/eran/Documents/SimulationDevelopment/RigidBodySim/xpcExample/src/xplaneConnect.h
+stdlib.h
+/home/eran/Documents/SimulationDevelopment/RigidBodySim/xpcExample/src/stdlib.h
+winsock2.h
+-
+ws2tcpip.h
+-
+sys/socket.h
+-
+netinet/in.h
+-
+arpa/inet.h
+-
+unistd.h
+-
+

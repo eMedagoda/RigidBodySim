@@ -1,5 +1,6 @@
 #include "PID.h"
 #include <cmath>
+#include <iostream>
 
 PID::PID(double P, double I, double D)
 : m_prev_error(0.0),
@@ -29,8 +30,10 @@ double PID::Control(double sp, double pv, double dt)
     {
         m_integral = 0.0;
     }
-    
-    output = m_P * error + m_D * derror + m_I * m_integral;    
+       
+    m_prev_error = error;    
+   
+    output = m_P * error + m_D * derror + m_I * m_integral * dt;    
     
     return output;
 }
