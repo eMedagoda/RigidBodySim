@@ -30,4 +30,23 @@ const double Iyy = (1.0/12.0) * MASS * (WIDTH * WIDTH + DEPTH * DEPTH);
 const double Izz = (1.0/12.0) * MASS * (WIDTH * WIDTH + HEIGHT * HEIGHT);
 const double Ixz = 0.001;
 
+// ekf parameters
+const double q_pos = 0.0;
+const double q_vel = 0.002;
+const double q_att = 0.00001;
+const double q_bia = 0.000001;
+const double q_alt = 0.0;
+const double q_dalt = 0.002;
+
+const double r_pos = 1.0;
+const double r_vel = 1.0;
+const double r_att = 0.0001;
+const double r_alt = 1.0;
+const double r_dalt = 5.0;
+
+const double p_pos = 1.0;
+const double p_vel = 1.0;
+const double p_att = 0.0001;
+const double p_bia = 0.00001;
+
 #endif

@@ -12,6 +12,20 @@ class Utils
         
         MatrixXd DirectionCosineMatrix(double phi, double theta, double psi);
         
+        VectorXd EulerToQuaternion(double phi, double theta, double psi);
+        
+        VectorXd QuatToEuler(VectorXd quat);
+        
+        MatrixXd QuatToDirectionCosineMatrix(VectorXd quat);
+        
+        MatrixXd QuaternionRateMap(VectorXd quat);
+        
+        VectorXd QuaternionTranspose(VectorXd quat);
+        
+        void QuaternionNormalise(VectorXd& quat);
+        
+        VectorXd QuaternionProduct(VectorXd q, VectorXd p);
+        
         void PiMinusPi(double& input);
                         
     private:

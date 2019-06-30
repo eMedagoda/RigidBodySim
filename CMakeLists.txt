@@ -10,6 +10,7 @@ add_executable(
     PID.cpp
     Sensors.cpp
     Utils.cpp
+    EKF.cpp
     UDP/Socket.cpp
     UDP/ClientSocket.cpp
     Joystick/joystick.cc

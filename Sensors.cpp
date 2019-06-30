@@ -18,15 +18,15 @@ VectorXd Sensors::IMU(VectorXd X, VectorXd U)
     // Normally distributed, gaussian noise
     std::random_device rd{};
     std::mt19937 generator{rd()};
-    std::normal_distribution<double> dist_acc_x(0.0, 0.5);
-    std::normal_distribution<double> dist_acc_y(0.0, 0.5);
-    std::normal_distribution<double> dist_acc_z(0.0, 0.5);
-    std::normal_distribution<double> dist_gyr_p(0.0, 0.01);
-    std::normal_distribution<double> dist_gyr_q(0.0, 0.01);
-    std::normal_distribution<double> dist_gyr_r(0.0, 0.01);
-    std::normal_distribution<double> dist_gyr_phi(0.0, 0.02);
-    std::normal_distribution<double> dist_gyr_tht(0.0, 0.02);
-    std::normal_distribution<double> dist_gyr_psi(0.0, 0.02);
+    std::normal_distribution<double> dist_acc_x(0.0, 0.0);
+    std::normal_distribution<double> dist_acc_y(0.0, 0.0);
+    std::normal_distribution<double> dist_acc_z(0.0, 0.0);
+    std::normal_distribution<double> dist_gyr_p(0.0, 0.0);
+    std::normal_distribution<double> dist_gyr_q(0.0, 0.0);
+    std::normal_distribution<double> dist_gyr_r(0.0, 0.0);
+    std::normal_distribution<double> dist_gyr_phi(0.0, 0.0);
+    std::normal_distribution<double> dist_gyr_tht(0.0, 0.0);
+    std::normal_distribution<double> dist_gyr_psi(0.0, 0.0);
     
     VectorXd IMU_measurements(9);
     IMU_measurements.setZero();    
@@ -54,12 +54,12 @@ VectorXd Sensors::GPS(VectorXd X)
     // Normally distributed, gaussian noise
     std::random_device rd{};
     std::mt19937 generator{rd()};
-    std::normal_distribution<double> dist_gps_pn(0.0, 1.0);
-    std::normal_distribution<double> dist_gps_pe(0.0, 1.0);
-    std::normal_distribution<double> dist_gps_pd(0.0, 1.0);
-    std::normal_distribution<double> dist_gps_vn(0.0, 0.1);
-    std::normal_distribution<double> dist_gps_ve(0.0, 0.1);
-    std::normal_distribution<double> dist_gps_vd(0.0, 0.1);
+    std::normal_distribution<double> dist_gps_pn(0.0, 0.0);
+    std::normal_distribution<double> dist_gps_pe(0.0, 0.0);
+    std::normal_distribution<double> dist_gps_pd(0.0, 0.0);
+    std::normal_distribution<double> dist_gps_vn(0.0, 0.0);
+    std::normal_distribution<double> dist_gps_ve(0.0, 0.0);
+    std::normal_distribution<double> dist_gps_vd(0.0, 0.0);
     
     Utils Utils;
     
@@ -89,7 +89,7 @@ double Sensors::Barometer(VectorXd X)
     // Normally distributed, gaussian noise
     std::random_device rd{};
     std::mt19937 generator{rd()};
-    std::normal_distribution<double> dist_baro_alt(0.0, 0.75);
+    std::normal_distribution<double> dist_baro_alt(0.0, 0.0);
     
     double Barometer_measurement = -X(11) + dist_baro_alt(generator); // barometric altitude
     
