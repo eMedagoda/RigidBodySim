@@ -4,36 +4,29 @@ using namespace Eigen;
 
 class Utils
 {
-    public:            
+    public:
 
         Utils();
-        
         ~Utils();
-        
-        MatrixXd DirectionCosineMatrix(double phi, double theta, double psi);
-        
+
+        Matrix3d DirectionCosineMatrix(double phi, double theta, double psi);
         VectorXd EulerToQuaternion(double phi, double theta, double psi);
-        
-        VectorXd QuatToEuler(VectorXd quat);
-        
-        MatrixXd QuatToDirectionCosineMatrix(VectorXd quat);
-        
+        Vector3d QuatToEuler(VectorXd quat);
+        Matrix3d QuatToDirectionCosineMatrix(VectorXd quat);
         MatrixXd QuaternionRateMap(VectorXd quat);
-        
         VectorXd QuaternionTranspose(VectorXd quat);
-        
+        VectorXd QuaternionChangeHand(VectorXd quat);
         void QuaternionNormalise(VectorXd& quat);
-        
         VectorXd QuaternionProduct(VectorXd q, VectorXd p);
-        
         void PiMinusPi(double& input);
-                        
+        Matrix3d VectorRotation(Vector3d a, Vector3d b);
+        Vector3d DirectionCosineMatrixToEuler(Matrix3d TBL);
+        VectorXd QuaternionTwoVectors(Vector3d u, Vector3d v);
+
     private:
 
-        MatrixXd L1(double phi);
-        
-        MatrixXd L2(double theta);
-        
-        MatrixXd L3(double psi);        
-        
+        Matrix3d L1(double phi);
+        Matrix3d L2(double theta);
+        Matrix3d L3(double psi);
+
 };

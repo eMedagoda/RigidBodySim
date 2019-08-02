@@ -98,6 +98,10 @@ void Joystick::GetInputs(jinput &inputs, JoystickEvent event)
     {
         inputs.ax5 = event.value/((double) JoystickEvent::MAX_AXES_VALUE); // top hat, longitudinal
     }
+    if (event.isButton() && event.number == 0)
+    {
+        inputs.ax6 = event.value;
+    }
 }
 
 std::ostream& operator<<(std::ostream& os, const JoystickEvent& e)

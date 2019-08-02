@@ -122,6 +122,7 @@ public:
     double ax3 = 0;
     double ax4 = 0;
     double ax5 = 0;
+    int    ax6 = 0;
   };
 
   /**

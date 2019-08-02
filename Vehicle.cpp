@@ -1,7 +1,10 @@
 #include "Vehicle.h"
 #include "Utils.h"
 #include "VehicleParameters.h"
+#include "EnvironmentParameters.h"
+#include "MathConstants.h"
 #include <cmath>
+#include <iostream>
 
 Vehicle::Vehicle()
 {
@@ -49,8 +52,8 @@ void Vehicle::Linearise(VectorXd X, VectorXd U, MatrixXd& A, MatrixXd& B)
 void Vehicle::Integrate(VectorXd& X, VectorXd U, double DT)
 {
     Utils Utils;
-    
-    VectorXd Xdot1 = StateRates(X, U);	
+
+    VectorXd Xdot1 = StateRates(X, U);
     VectorXd An = Xdot1 * DT;
 
     VectorXd Xdot2 = StateRates(X + 0.5*An, U);
@@ -64,21 +67,21 @@ void Vehicle::Integrate(VectorXd& X, VectorXd U, double DT)
 
     // Runge-Kutta 4th order integration
     X = X + (An + 2.0*Bn + 2.0*Cn + Dn)/6.0;
-    
+
     Utils.PiMinusPi(X(8));
 }
 
-void Vehicle::Trim(VectorXd& X0, 
-                   VectorXd& U0, 
-                   double VelTrim, 
-                   double AltTrim, 
-                   double ThetaTrim, 
-                   double PsiTrim, 
-                   double LonTrim, 
+void Vehicle::Trim(VectorXd& X0,
+                   VectorXd& U0,
+                   double VelTrim,
+                   double AltTrim,
+                   double ThetaTrim,
+                   double PsiTrim,
+                   double LonTrim,
                    double LatTrim)
 {
     // initial trim vector
-    VectorXd XTrim(3); 
+    VectorXd XTrim(3);
     XTrim << 1.0, -1.0, 1.0; // Fx, Fz, My
 
     // convergence tolerance
@@ -104,19 +107,19 @@ void Vehicle::Trim(VectorXd& X0,
 
     // initial counter
     int n = 1;
-    
+
     VectorXd Xdot(12);
     Xdot.setZero();
-    
+
     VectorXd XTrimDot(3);
     XTrimDot.setZero();
-    
+
     VectorXd XTrim_new(3);
     XTrim_new.setZero();
-    
+
     VectorXd XTrimDotPert(3);
     XTrimDot.setZero();
-    
+
     double Pert = 0.0;
 
     while (Err > Tol)
@@ -126,69 +129,69 @@ void Vehicle::Trim(VectorXd& X0,
         X(2) = VelTrim*sin(ThetaTrim);
         X(7) = ThetaTrim;
         X(11) = -AltTrim;
-        
+
         // set trim controls
         U(0) = XTrim(0);
         U(2) = XTrim(1);
         U(4) = XTrim(2);
-        
-        Xdot = StateRates(X,U);        
+
+        Xdot = StateRates(X,U);
 
         XTrimDot << Xdot(0), Xdot(2), Xdot(4);
-            
+
         // perturb controls (Fx)
         Pert = XTrim(0) + dXTrim;
-        
+
         U(0) = Pert;
         U(2) = XTrim(1);
         U(4) = XTrim(2);
-        
+
         Xdot = StateRates(X,U);
-        
+
         XTrimDotPert << Xdot(0), Xdot(2), Xdot(4);
-        
-        J.block<3,1>(0,0) = (XTrimDotPert - XTrimDot)/dXTrim;    
-     
+
+        J.block<3,1>(0,0) = (XTrimDotPert - XTrimDot)/dXTrim;
+
         // perturb controls (Fz)
         Pert = XTrim(1) + dXTrim;
-        
+
         U(0) = XTrim(0);
         U(2) = Pert;
         U(4) = XTrim(2);
-        
+
         Xdot = StateRates(X,U);
-        
+
         XTrimDotPert << Xdot(0), Xdot(2), Xdot(4);
-        
-        J.block<3,1>(0,1) = (XTrimDotPert - XTrimDot)/dXTrim;        
-              
+
+        J.block<3,1>(0,1) = (XTrimDotPert - XTrimDot)/dXTrim;
+
         // perturb controls (My)
         Pert = XTrim(2) + dXTrim;
-        
+
         U(0) = XTrim(0);
         U(2) = XTrim(1);
         U(4) = Pert;
-        
+
         Xdot = StateRates(X,U);
-        
+
         XTrimDotPert << Xdot(0), Xdot(2), Xdot(4);
-        
+
         J.block<3,1>(0,2) = (XTrimDotPert - XTrimDot)/dXTrim;
-        
+
         // check for convergence
         VectorXd XTrim_new = XTrim - J.inverse() * XTrimDot;
-        
+
         // check for convergence
         Err = sqrt((XTrim_new(0) - XTrim(0))*(XTrim_new(0) - XTrim(0)) + (XTrim_new(1) - XTrim(1))*(XTrim_new(1) - XTrim(1)) + (XTrim_new(2) - XTrim(2))*(XTrim_new(2) - XTrim(2)));
-        
+
         XTrim = XTrim_new;
-        
+
         n = n + 1;
-    }        
-    
-    X0.setZero();    
-    U0.setZero();    
-   
+    }
+
+    X0.setZero();
+    U0.setZero();
+
     // set trim states
     X0(0) = VelTrim*cos(ThetaTrim);
     X0(2) = VelTrim*sin(ThetaTrim);
@@ -198,21 +201,21 @@ void Vehicle::Trim(VectorXd& X0,
     X0(12) = LonTrim;
     X0(13) = LatTrim;
     X0(14) = AltTrim;
-    
+
     // set trim controls
     U0(0) = XTrim(0);
     U0(2) = XTrim(1);
     U0(4) = XTrim(2);
-         
+
 }
 
 VectorXd Vehicle::StateRates(VectorXd X, VectorXd U)
 {
     VectorXd Xdot(15);
     Xdot.setZero();
-    
+
     Utils Utils;
-    
+
     // calculate body axis rotational inertias
     double c0 = Ixx*Izz-Ixz*Ixz;
     double c1 = Izz/c0;
@@ -224,7 +227,7 @@ VectorXd Vehicle::StateRates(VectorXd X, VectorXd U)
     double c7 = c5*(Izz-Ixx);
     double c8 = Ixx/c0;
     double c9 = c8*(Ixx-Iyy)+c2*Ixz;
-    
+
     double u     = X(0);
     double v     = X(1);
     double w     = X(2);
@@ -234,23 +237,18 @@ VectorXd Vehicle::StateRates(VectorXd X, VectorXd U)
     double phi   = X(6);
     double theta = X(7);
     double psi   = X(8);
-    
+
     double lon   = X(12);
     double lat   = X(13);
     double alt   = X(14);
 
-    // course lateral drag model
-    double ydrag  = 5.0 * v * v;;
-    
-    if (v < 0.0)
-    {
-        ydrag = -ydrag;
-    }
-    
-    // force and moment inputs
-    double F_x = U(0);
-    double F_y = U(1) - ydrag;
-    double F_z = U(2);
+    // calculate drag estimates (body)
+    Vector3d F_drag_body = DragModel(X);
+
+    // force and moment inputs (body)
+    double F_x = U(0) - F_drag_body(0);
+    double F_y = U(1) - F_drag_body(1);
+    double F_z = U(2) - F_drag_body(2);
     double M_x = U(3);
     double M_y = U(4);
     double M_z = U(5);
@@ -262,7 +260,7 @@ VectorXd Vehicle::StateRates(VectorXd X, VectorXd U)
     double pdot = c3*p*q + c4*q*r + c1*M_x + c2*M_z;
     double qdot = c7*p*r - c6*(p*p - r*r)  + c5*M_y;
     double rdot = c9*p*q - c3*q*r + c2*M_x + c8*M_z;
-    
+
     double phidot   = p + q*sin(phi)*tan(theta) + r*cos(phi)*tan(theta);
     double thetadot = q*cos(phi) - r*sin(phi);
     double psidot   = q*sin(phi)*(1.0/cos(theta)) + r*cos(phi)*(1.0/cos(theta));
@@ -273,18 +271,45 @@ VectorXd Vehicle::StateRates(VectorXd X, VectorXd U)
     // position rates (navigation frame)
     VectorXd SpeedVec(3);
     SpeedVec << u, v, w;
-    VectorXd PosRates = C_bn.transpose() * SpeedVec;    
-    
+    VectorXd PosRates = C_bn.transpose() * SpeedVec;
+
     // geodetic rates
-    double N_RE = R_EA/sqrt(1.0 - ECC*ECC*sin(lat)*sin(lat)); // prime vertical radius of curvature    
+    double N_RE = R_EA/sqrt(1.0 - ECC*ECC*sin(lat)*sin(lat)); // prime vertical radius of curvature
     double M_RE = (R_EA * (1.0 - ECC*ECC))/sqrt((1.0 - ECC*ECC*sin(lat)*sin(lat))*(1.0 - ECC*ECC*sin(lat)*sin(lat))*(1.0 - ECC*ECC*sin(lat)*sin(lat))); // meridian radius of curvature
     double londot = PosRates(1)/((N_RE + alt)*cos(lat)); // longitude rate
     double latdot = PosRates(0)/(M_RE + alt); // latitude rate
-    double altdot = -PosRates(2); // altitude rate    
-    
+    double altdot = -PosRates(2); // altitude rate
+
     // populate state rate vector
     Xdot << udot, vdot, wdot, pdot, qdot, rdot, phidot, thetadot, psidot, PosRates(0), PosRates(1), PosRates(2), londot, latdot, altdot;
-    
+
     return Xdot;
 
+}
+
+Vector3d Vehicle::DragModel(VectorXd X)
+{
+    Vector3d F_drag;
+
+    // course drag model
+    F_drag(0)  = drag_factor * X(0) * X(0);
+    F_drag(1)  = drag_factor * X(1) * X(1);
+    F_drag(2)  = drag_factor * X(2) * X(2);
+
+    if (X(0) < 0.0)
+    {
+        F_drag(0) *= -1.0;
+    }
+
+    if (X(1) < 0.0)
+    {
+        F_drag(1) *= -1.0;
+    }
+
+    if (X(2) < 0.0)
+    {
+        F_drag(2) *= -1.0;
+    }
+
+    return F_drag;
 }
