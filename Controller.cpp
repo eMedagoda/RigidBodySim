@@ -384,3 +384,97 @@ double Controller::IntegrateScalar(double dydx_new, double dydx, double y)
 {
     return y + (0.5 * (dydx_new + dydx) * m_DT);
 }
+
+VectorXd Controller::Actuators(VectorXd U_total)
+{
+    MatrixXd J(5,5);
+    J.setZero();
+
+    VectorXd U(5);
+    U << U_total(0), U_total(2), U_total(3), U_total(4), U_total(5); // Fx, Fz, Mx, My, Mz
+
+    // set reference input
+    VectorXd U0 = U;
+
+    // initial trim vector
+    VectorXd XTrim(5);
+    XTrim << 20.0, 20.0, 10.0, 0.01, -0.05; // F_L, F_R, F_T, mu, d_mu (TODO: possibly cache this from last estimate)
+
+    // convergence tolerance
+    double Tol = 1e-8;
+
+    // perturbation
+    double dXTrim = 1e-6;
+
+    // intial error flag
+    double Err = 1.0;
+
+    // initial counter
+    int n = 0;
+
+    VectorXd XTrim_new = XTrim;
+
+    while (Err > Tol) // while solution hasn't converged
+    {
+        // estimate current acutator values
+        U = ControlMap(XTrim);
+
+        // difference between reference and estimated input
+        VectorXd dU = U0 - U;
+
+        for (int i = 0; i < 5; i++)
+        {
+            // perturb inputs
+            VectorXd XTrim_Pert = XTrim;
+
+            // add perturbation to current estimate
+            XTrim_Pert(i) = XTrim(i) + dXTrim;
+
+            // calculate perturbed input estimates
+            VectorXd U_Pert = ControlMap(XTrim_Pert);
+
+            // difference between reference and perturbed input estimate
+            VectorXd dU_Pert = U0 - U_Pert;
+
+            // update Jacobian
+            J.block<5,1>(0,i) = (dU_Pert - dU)/dXTrim;
+        }
+
+        // update state (gradient decent)
+        XTrim_new = XTrim - J.inverse() * dU;
+
+        // check for convergence
+        Err = sqrt((XTrim_new(0) - XTrim(0))*(XTrim_new(0) - XTrim(0)) + (XTrim_new(1) - XTrim(1))*(XTrim_new(1) - XTrim(1)) + (XTrim_new(2) - XTrim(2))*(XTrim_new(2) - XTrim(2)) + (XTrim_new(3) - XTrim(3))*(XTrim_new(3) - XTrim(3)) + (XTrim_new(4) - XTrim(4))*(XTrim_new(4) - XTrim(4)));
+
+        // update current state for next loop
+        XTrim = XTrim_new;
+
+        // increment counter
+        n++;
+    }
+
+    return XTrim;
+}
+
+VectorXd Controller::ControlMap(VectorXd H)
+{
+    VectorXd U(5);
+    U.setZero();
+
+    // Fx
+    U(0) = H(0)*sin(H(3) + H(4)) + H(1)*sin(H(3) - H(4));
+
+    // Fz
+    U(1) = -H(0)*cos(H(3) + H(4)) - H(1)*cos(H(3) - H(4)) - H(2);
+
+    // Mx
+    U(2) = -H(0)*L2*cos(H(3) + H(4)) + H(1)*L4*cos(H(3) - H(4));
+
+    // My
+    U(3) = H(0)*L1*cos(H(3) + H(4)) + H(1)*L3*cos(H(3) - H(4)) - H(2)*L5;
+
+    // Mz
+    U(4) = -H(0)*L2*sin(H(3) + H(4)) + H(1)*L4*sin(H(3) - H(4));
+
+    return U;
+}

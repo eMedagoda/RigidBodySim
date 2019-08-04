@@ -22,6 +22,7 @@ class Controller
         ~Controller();
 
         VectorXd RunController(VectorXd X_COM, VectorXd X_PVA, bool tilt_mode);
+        VectorXd Actuators(VectorXd U);
 
     private:
 
@@ -33,6 +34,7 @@ class Controller
         double PitchControl(double pitch_command, double pitch_angle, double pitch_rate);
         double YawControl(double yaw_command, double yaw_angle, double yaw_rate);
         double YawRateControl(double yaw_rate_command, double yaw_rate);
+        VectorXd ControlMap(VectorXd H);
 
         void VerticalSpeedLimiter(double &vertical_speed_command);
         void PiMinusPi(double& input);

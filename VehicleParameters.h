@@ -5,18 +5,15 @@
 #define vehicle_parameters__H
 
 // vehicle properties
-const double MASS = 4.0;
-const double HEIGHT = 0.15;
-const double WIDTH = 0.15;
-const double DEPTH = 0.3;
-const double L1 = 0.05;
-const double L2 = 0.21;
-const double L3 = 0.05;
-const double L4 = 0.21;
-const double L5 = 0.53;
-const double Ixx = (1.0/12.0) * MASS * (HEIGHT * HEIGHT + DEPTH * DEPTH);
-const double Iyy = (1.0/12.0) * MASS * (WIDTH * WIDTH + DEPTH * DEPTH);
-const double Izz = (1.0/12.0) * MASS * (WIDTH * WIDTH + HEIGHT * HEIGHT);
+const double MASS = 4.5;
+const double L1 = 0.10;
+const double L2 = 0.46;
+const double L3 = 0.10;
+const double L4 = 0.46;
+const double L5 = 0.60;
+const double Ixx = 0.13;
+const double Iyy = 0.13;
+const double Izz = 0.26;
 const double Ixz = 0.00;
 const double drag_factor_x = 4.0;
 const double drag_factor_y = 5.0;
@@ -147,6 +144,6 @@ const double K_i_r = 0.15;
 
 const double wrrcl = 7.0;
 const double K_i_rr = 0.0;
-const double yaw_rate_command_limit = 60.0 * DEG2RAD; // rad
+const double yaw_rate_command_limit = 120.0 * DEG2RAD; // rad
 
 #endif

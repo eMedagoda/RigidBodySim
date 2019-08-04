@@ -70,6 +70,8 @@ int main(int argc, char** argv)
 
     VectorXd U(n_cont);
     U.setZero();
+    VectorXd H(5);
+    H.setZero();
     VectorXd U_Trim(n_cont);
     U_Trim.setZero();
     VectorXd U_imu(n_cont);
@@ -95,7 +97,6 @@ int main(int argc, char** argv)
     double qC = 0.0;   // pitch rate command
     double rC = 0.0;   // yaw angle command
 
-
     if (tilt_mode)
     {
         X_COM << throttle, phiC, thtC_tilt, thrust, rC; // command vector
@@ -107,6 +108,12 @@ int main(int argc, char** argv)
 
     // determine trim states and controls
     Veh.Trim(X, U, VelTrim, AltTrim, ThetaTrim, PsiTrim, LonTrim, LatTrim);
+
+    // initialise controller object
+    Controller CTRL(DT_IMU_0);
+
+    // calculate motor and servo commands
+    H = CTRL.Actuators(U);
 
     MatrixXd C_bn = Utils.DirectionCosineMatrix(X(6),X(7),X(8));
     VectorXd body_vel(3);
@@ -127,9 +134,6 @@ int main(int argc, char** argv)
 
     // initialise EKF object
     EKF EKF(X_EKF, ACC_STATIC, GYR_STATIC);
-
-    // initialise controller object
-    Controller CTRL(DT_IMU_0);
 
     // estimate drag (body)
     Vector3d F_drag_body = Veh.DragModel(X);
@@ -217,7 +221,12 @@ int main(int argc, char** argv)
            << X_EKF(18) << ", "
            << euler(0) << ", "
            << euler(1) << ", "
-           << euler(2) << std::endl;
+           << euler(2) << ", "
+           << H(0) << ", "
+           << H(1) << ", "
+           << H(2) << ", "         // 60
+           << H(3) << ", "
+           << H(4) << std::endl;
 
     //-------------------------------------------------------------------
 
@@ -380,6 +389,9 @@ int main(int argc, char** argv)
                 // control input vector (body force input vector)
                 U = CTRL.RunController(X_COM, X_PVA, tilt_mode);
 
+                // calculate motor and servo commands
+                H = CTRL.Actuators(U);
+
                 // ------------------------- LOGGING -----------------------------
 
                 X_EKF = EKF.GetX(); // get EKF state vector
@@ -451,7 +463,12 @@ int main(int argc, char** argv)
                         << X_EKF(18) << ", "
                         << euler(0) << ", "
                         << euler(1) << ", "
-                        << euler(2) << std::endl;
+                        << euler(2) << ", "
+                        << H(0) << ", "
+                        << H(1) << ", "
+                        << H(2) << ", "         // 60
+                        << H(3) << ", "
+                        << H(4) << std::endl;
 
                 std::cout << std::setprecision(3)
                         << std::fixed
@@ -469,25 +486,30 @@ int main(int argc, char** argv)
                         << X_EKF(9) << "| "
                         << euler(0) * RAD2DEG << ", "
                         << euler(1) * RAD2DEG << ", "
-                        << euler(2) * RAD2DEG << std::endl;
+                        << euler(2) * RAD2DEG << " | "
+                        << H(0) << ", "
+                        << H(1) << ", "
+                        << H(2) << ", "
+                        << H(3) * RAD2DEG << ", "
+                        << H(4) * RAD2DEG << std::endl;
 
-                std::cout << std::setprecision(3)
-                        << std::fixed
-                        << "TRU: "
-                        << X(9) << ", "
-                        << X(10) << ", "
-                        << X(11) << " | "
-                        << VelNav(0) << ", "
-                        << VelNav(1) << ", "
-                        << VelNav(2) << " | "
-                        << std::setprecision(3)
-                        << quat_truth(0) << ", "
-                        << quat_truth(1) << ", "
-                        << quat_truth(2) << ", "
-                        << quat_truth(3) << "| "
-                        << X(6) * RAD2DEG << ", "
-                        << X(7) * RAD2DEG << ", "
-                        << X(8) * RAD2DEG << std::endl;
+//                 std::cout << std::setprecision(3)
+//                         << std::fixed
+//                         << "TRU: "
+//                         << X(9) << ", "
+//                         << X(10) << ", "
+//                         << X(11) << " | "
+//                         << VelNav(0) << ", "
+//                         << VelNav(1) << ", "
+//                         << VelNav(2) << " | "
+//                         << std::setprecision(3)
+//                         << quat_truth(0) << ", "
+//                         << quat_truth(1) << ", "
+//                         << quat_truth(2) << ", "
+//                         << quat_truth(3) << "| "
+//                         << X(6) * RAD2DEG << ", "
+//                         << X(7) * RAD2DEG << ", "
+//                         << X(8) * RAD2DEG << std::endl;
 
                 i_log++; // increment log counter
             }

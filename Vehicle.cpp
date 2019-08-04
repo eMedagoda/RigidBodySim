@@ -186,7 +186,7 @@ void Vehicle::Trim(VectorXd& X0,
 
         XTrim = XTrim_new;
 
-        n = n + 1;
+        n++;
     }
 
     X0.setZero();
