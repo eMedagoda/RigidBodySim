@@ -9,7 +9,7 @@
 EKF::EKF(VectorXd X, VectorXd acc_static_bias, VectorXd gyr_static_bias)
 {
     // initial state vector
-    m_X = VectorXd(16);
+    m_X = VectorXd(19);
     m_X = X;
 
     // initial covariance matrix
@@ -349,6 +349,11 @@ void EKF::RunEKF(VectorXd imu_data, VectorXd gps_data, double baro_data, double 
     m_X(13) += err_X(13);
     m_X(14) += err_X(14);
     m_X(15) += err_X(15);
+
+    // debiased gyro rates
+    m_X(16) = gyro_rates(0);
+    m_X(17) = gyro_rates(1);
+    m_X(18) = gyro_rates(2);
 }
 
 MatrixXd EKF::StateTransitionMatrix(VectorXd QUATNL, VectorXd WBECB, VectorXd FSPCB)
@@ -518,4 +523,37 @@ Vector3d EKF::GetEuler()
     Vector3d euler = Utils.QuatToEuler(quat); // euler angles from quaternion
 
     return euler;
+}
+
+VectorXd EKF::GetPVA()
+{
+    Utils Utils;
+
+    VectorXd pva_data(12);
+
+    pva_data(0) = m_X(0);
+    pva_data(1) = m_X(1);
+    pva_data(2) = m_X(2);
+    pva_data(3) = m_X(3);
+    pva_data(4) = m_X(4);
+    pva_data(5) = m_X(5);
+
+    VectorXd quat(4);
+
+    quat(0) = m_X(6);
+    quat(1) = m_X(7);
+    quat(2) = m_X(8);
+    quat(3) = m_X(9);
+
+    Vector3d euler = Utils.QuatToEuler(quat); // euler angles from quaternion
+
+    pva_data(6) = euler(0);
+    pva_data(7) = euler(1);
+    pva_data(8) = euler(2);
+
+    pva_data(9) = m_X(16);
+    pva_data(10) = m_X(17);
+    pva_data(11) = m_X(18);
+
+    return pva_data;
 }

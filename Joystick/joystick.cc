@@ -52,7 +52,7 @@ void Joystick::openPath(std::string devicePath, bool blocking)
 
 bool Joystick::sample(JoystickEvent* event)
 {
-  int bytes = read(_fd, event, sizeof(*event)); 
+  int bytes = read(_fd, event, sizeof(*event));
 
   if (bytes == -1)
     return false;
@@ -101,6 +101,10 @@ void Joystick::GetInputs(jinput &inputs, JoystickEvent event)
     if (event.isButton() && event.number == 0)
     {
         inputs.ax6 = event.value;
+    }
+    if (event.isButton() && event.number == 1)
+    {
+        inputs.ax7 = event.value;
     }
 }
 

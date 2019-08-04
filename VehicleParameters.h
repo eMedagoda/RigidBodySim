@@ -1,4 +1,5 @@
 #include <cmath>
+#include "MathConstants.h"
 
 #ifndef vehicle_parameters__H
 #define vehicle_parameters__H
@@ -17,11 +18,15 @@ const double Ixx = (1.0/12.0) * MASS * (HEIGHT * HEIGHT + DEPTH * DEPTH);
 const double Iyy = (1.0/12.0) * MASS * (WIDTH * WIDTH + DEPTH * DEPTH);
 const double Izz = (1.0/12.0) * MASS * (WIDTH * WIDTH + HEIGHT * HEIGHT);
 const double Ixz = 0.00;
-const double drag_factor = 5.0;
+const double drag_factor_x = 4.0;
+const double drag_factor_y = 5.0;
+const double drag_factor_z = 1.0;
 
 // magnetic field parameters
 const double MAG_ELE = 0.0;
 const double MAG_AZI = 0.0;
+
+//---------------------------------------------------
 
 // sensor noise
 const double acc_noise_bia_x = -0.17;
@@ -108,5 +113,40 @@ const double p_g_bia  = 0.00000001;
 // const double p_dalt = 0.25;
 // const double p_a_bia  = 0.00000001;
 // const double p_g_bia  = 0.00000001;
+
+//---------------------------------------------------
+
+// controller properties
+const double K_alt = 0.5;
+const double K_dalt = 3.0;
+const double K_i_dalt = 1.0;
+const double vertical_speed_limit_upper = 2.5;
+const double vertical_speed_limit_lower = -2.5;
+const double AltitudeControlDeadband = 0.1;
+const double AltitudeHoldVerticalSpeedThreshold = 0.5;
+const double thrust_factor_limit = 2.0;
+const double thrust_command_limit = 10.0; // N
+
+const double wpcl = 8.5;
+const double zpcl = 0.95;
+const double K_i_p = 0.15;
+const double roll_command_limit = 30.0 * DEG2RAD; // rad
+
+const double wqcl = 6.0;
+const double zqcl = 0.95;
+const double K_i_q = 0.15;
+const double pitch_command_limit = 30.0 * DEG2RAD; // rad
+const double pitch_rate_command_limit = 15.0 * DEG2RAD; // rad
+
+const double YawRateControlDeadband = 10.0 * DEG2RAD; // yaw rate input threshold to engage heading hold
+const double YawHoldYawRateThreshold =  10.0 * DEG2RAD; // yaw rate command threshold for heading hold
+
+const double wrcl = 4.0;
+const double zrcl = 0.95;
+const double K_i_r = 0.15;
+
+const double wrrcl = 7.0;
+const double K_i_rr = 0.0;
+const double yaw_rate_command_limit = 60.0 * DEG2RAD; // rad
 
 #endif

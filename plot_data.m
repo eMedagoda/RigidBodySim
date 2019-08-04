@@ -22,31 +22,34 @@ title('V')
 
 figure(2)
 subplot(3,1,1)
-plot(M(:,1),M(:,5)*180/pi,col,'Linewidth',2)
+plot(M(:,1),M(:,52)*180/pi,col,'Linewidth',2)
 hold on
+plot(M(:,1),M(:,5)*180/pi,'r','Linewidth',2)
 title('p')
 subplot(3,1,2)
-plot(M(:,1),M(:,6)*180/pi,col,'Linewidth',2)
+plot(M(:,1),M(:,53)*180/pi,col,'Linewidth',2)
 hold on
+plot(M(:,1),M(:,6)*180/pi,'r','Linewidth',2)
 title('q')
 subplot(3,1,3)
-plot(M(:,1),M(:,7)*180/pi,col,'Linewidth',2)
+plot(M(:,1),M(:,54)*180/pi,col,'Linewidth',2)
 hold on
+plot(M(:,1),M(:,7)*180/pi,'r','Linewidth',2)
 title('r')
 
 figure(3)
 subplot(3,1,1)
-plot(M(:,1),M(:,52)*180/pi,col,'Linewidth',2)
+plot(M(:,1),M(:,55)*180/pi,col,'Linewidth',2)
 hold on
 plot(M(:,1),M(:,8)*180/pi,'r','Linewidth',2)
 title('\phi')
 subplot(3,1,2)
-plot(M(:,1),M(:,53)*180/pi,col,'Linewidth',2)
+plot(M(:,1),M(:,56)*180/pi,col,'Linewidth',2)
 hold on
 plot(M(:,1),M(:,9)*180/pi,'r','Linewidth',2)
 title('\theta')
 subplot(3,1,3)
-plot(M(:,1),M(:,54)*180/pi,col,'Linewidth',2)
+plot(M(:,1),M(:,57)*180/pi,col,'Linewidth',2)
 hold on
 plot(M(:,1),M(:,10)*180/pi,'r','Linewidth',2)
 title('\psi')

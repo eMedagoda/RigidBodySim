@@ -81,7 +81,7 @@ void Vehicle::Trim(VectorXd& X0,
                    double LatTrim)
 {
     // initial trim vector
-    VectorXd XTrim(3);
+    Vector3d XTrim;
     XTrim << 1.0, -1.0, 1.0; // Fx, Fz, My
 
     // convergence tolerance
@@ -99,7 +99,7 @@ void Vehicle::Trim(VectorXd& X0,
     U.setZero();
 
     // initialise jacobian
-    MatrixXd J(3,3);
+    Matrix3d J;
     J.setZero();
 
     // intial error flag
@@ -111,13 +111,13 @@ void Vehicle::Trim(VectorXd& X0,
     VectorXd Xdot(12);
     Xdot.setZero();
 
-    VectorXd XTrimDot(3);
+    Vector3d XTrimDot;
     XTrimDot.setZero();
 
-    VectorXd XTrim_new(3);
+    Vector3d XTrim_new;
     XTrim_new.setZero();
 
-    VectorXd XTrimDotPert(3);
+    Vector3d XTrimDotPert;
     XTrimDot.setZero();
 
     double Pert = 0.0;
@@ -266,12 +266,12 @@ VectorXd Vehicle::StateRates(VectorXd X, VectorXd U)
     double psidot   = q*sin(phi)*(1.0/cos(theta)) + r*cos(phi)*(1.0/cos(theta));
 
     // navigation to body
-    MatrixXd C_bn = Utils.DirectionCosineMatrix(phi, theta, psi);
+    Matrix3d C_bn = Utils.DirectionCosineMatrix(phi, theta, psi);
 
     // position rates (navigation frame)
-    VectorXd SpeedVec(3);
+    Vector3d SpeedVec;
     SpeedVec << u, v, w;
-    VectorXd PosRates = C_bn.transpose() * SpeedVec;
+    Vector3d PosRates = C_bn.transpose() * SpeedVec;
 
     // geodetic rates
     double N_RE = R_EA/sqrt(1.0 - ECC*ECC*sin(lat)*sin(lat)); // prime vertical radius of curvature
@@ -292,9 +292,9 @@ Vector3d Vehicle::DragModel(VectorXd X)
     Vector3d F_drag;
 
     // course drag model
-    F_drag(0)  = drag_factor * X(0) * X(0);
-    F_drag(1)  = drag_factor * X(1) * X(1);
-    F_drag(2)  = drag_factor * X(2) * X(2);
+    F_drag(0)  = drag_factor_x * X(0) * X(0);
+    F_drag(1)  = drag_factor_y * X(1) * X(1);
+    F_drag(2)  = drag_factor_z * X(2) * X(2);
 
     if (X(0) < 0.0)
     {

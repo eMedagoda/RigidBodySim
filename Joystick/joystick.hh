@@ -33,29 +33,29 @@ public:
 
   /** Maximum value of axes range */
   static const short MAX_AXES_VALUE = 32767;
-  
+
   /**
    * The timestamp of the event, in milliseconds.
    */
   unsigned int time;
-  
+
   /**
    * The value associated with this joystick event.
    * For buttons this will be either 1 (down) or 0 (up).
    * For axes, this will range between MIN_AXES_VALUE and MAX_AXES_VALUE.
    */
   short value;
-  
+
   /**
    * The event type.
    */
   unsigned char type;
-  
+
   /**
    * The axis/button number.
    */
   unsigned char number;
-  
+
   /**
    * Returns true if this event is the result of a button press.
    */
@@ -80,7 +80,7 @@ public:
   {
     return (type & JS_EVENT_INIT) != 0;
   }
-  
+
   /**
    * The ostream inserter needs to be a friend so it can access the
    * internal data structures.
@@ -101,9 +101,9 @@ class Joystick
 {
 private:
   void openPath(std::string devicePath, bool blocking=false);
-  
+
   int _fd;
-  
+
 public:
   ~Joystick();
 
@@ -111,7 +111,7 @@ public:
    * Initialises an instance for the first joystick: /dev/input/js0
    */
   Joystick();
-  
+
     /**
    * Joystick input structure
    */
@@ -123,6 +123,7 @@ public:
     double ax4 = 0;
     double ax5 = 0;
     int    ax6 = 0;
+    int    ax7 = 0;
   };
 
   /**
@@ -151,21 +152,21 @@ public:
    * the option of blocking I/O.
    */
   Joystick(std::string devicePath, bool blocking);
- 
+
   /**
    * Returns true if the joystick was found and may be used, otherwise false.
    */
   bool isFound();
-  
+
   /**
    * Attempts to populate the provided JoystickEvent instance with data
    * from the joystick. Returns true if data is available, otherwise false.
    */
-  bool sample(JoystickEvent* event);   
- 
+  bool sample(JoystickEvent* event);
+
   // Map raw joystick inputs into normalised range
   void GetInputs(jinput &inputs, JoystickEvent event);
-  
+
 };
 
 #endif

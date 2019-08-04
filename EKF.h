@@ -15,6 +15,7 @@ class EKF
         Vector3d GetPos();
         Vector3d GetVel();
         Vector3d GetEuler();
+        VectorXd GetPVA();
     private:
 
         MatrixXd StateTransitionMatrix(VectorXd QUATNL, VectorXd WBECB, VectorXd FSPCB);

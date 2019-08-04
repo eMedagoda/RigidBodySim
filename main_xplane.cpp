@@ -1,8 +1,8 @@
 #include "Vehicle.h"
-#include "PID.h"
 #include "Sensors.h"
 #include "Utils.h"
 #include "EKF.h"
+#include "Controller.h"
 #include "VehicleParameters.h"
 #include "EnvironmentParameters.h"
 #include "MathConstants.h"
@@ -34,18 +34,22 @@ int main(int argc, char** argv)
     printf("open failed.\n");
     exit(1);
     }
-    
-//     // Open Socket to XPlane
-// 	const char* IP = "127.0.0.1";      //IP Address of computer running XPlane
-// 	XPCSocket sock = openUDP(IP);
-// 	float tVal[1];
-// 	int tSize = 1;
-// 	if (getDREF(sock, "sim/test/test_float", tVal, &tSize) < 0)
-// 	{
-// 		printf("Error establishing connecting. Unable to read data from X-Plane.");
-// 		return EXIT_FAILURE;
-// 	}
-    
+
+    //-------------------------------------------------------------------
+
+    // Open Socket to XPlane
+	const char* IP = "127.0.0.1";      //IP Address of computer running XPlane
+	XPCSocket sock = openUDP(IP);
+	float tVal[1];
+	int tSize = 1;
+	if (getDREF(sock, "sim/test/test_float", tVal, &tSize) < 0)
+	{
+		printf("Error establishing connecting. Unable to read data from X-Plane.");
+		return EXIT_FAILURE;
+	}
+
+    //-------------------------------------------------------------------
+
     Vehicle Veh;
     Utils Utils;
     Sensors Sensors;
@@ -54,12 +58,16 @@ int main(int argc, char** argv)
     double DT_IMU_0 = 0.01;     // control/IMU time step
     double DT_GPS_0 = 0.1;      // GPS time step
 
-    int n_out = 15;   // number of tracked outputs (states)
-    int n_cont = 6;   // number of control inputs
+    int n_out = 15; // number of tracked outputs (states)
+    int n_cont = 6; // number of control inputs
+    int n_com = 5;  // number of guidance commands
 
     // initialise states and controls
     VectorXd X(n_out);
     X.setZero();
+    VectorXd X_COM(n_com);
+    X_COM.setZero();
+
     VectorXd U(n_cont);
     U.setZero();
     VectorXd U_Trim(n_cont);
@@ -75,15 +83,27 @@ int main(int argc, char** argv)
     double LonTrim   = 153.121 * DEG2RAD;
     double LatTrim   = -27.39 * DEG2RAD;
 
-    // initial guidance states
-    double VfC = VelTrim; // forward speed command
-    double VvC = 0.0; // vertical speed command
+    // convert joystick inputs into
+    bool tilt_mode = false;
+    bool tilt_switch_high = false;
+
+    double throttle = 1.0; // vertical velocity command (navigation frame)
+    double thrust = 0.0; // forward thrust (navigation frame)
     double phiC = 0.0; // bank angle command
-    double thetaC = ThetaTrim; // pitch angle command
-    double dpsiC = 0.0; // yaw rate command
-    double qC = 0.0; // pitch rate command
-    double u_sum = 0.0; // forward speed (body axis) integral sum
-    double w_sum = 0.0; // vertical speed (body axis) integral sum
+    double thtC = 0.0; // pitch angle command
+    double thtC_tilt = 0.0; // pitch command in tilt mode
+    double qC = 0.0;   // pitch rate command
+    double rC = 0.0;   // yaw angle command
+
+
+    if (tilt_mode)
+    {
+        X_COM << throttle, phiC, thtC_tilt, thrust, rC; // command vector
+    }
+    else
+    {
+        X_COM << throttle, phiC, thtC, 0.0, rC; // command vector
+    }
 
     // determine trim states and controls
     Veh.Trim(X, U, VelTrim, AltTrim, ThetaTrim, PsiTrim, LonTrim, LatTrim);
@@ -95,8 +115,9 @@ int main(int argc, char** argv)
     VectorXd quat_truth(4);
     quat_truth = Utils.EulerToQuaternion(X(6),X(7),X(8));
 
-    VectorXd X_EKF(16);
-    X_EKF << X(9), X(10), X(11), nav_vel(0), nav_vel(1), nav_vel(2), quat_truth(0), quat_truth(1), quat_truth(2), quat_truth(3), 0.0, 0.0, 0.0, 0.0, 0.0, 0.0;
+    // initial filter states
+    VectorXd X_EKF(19);
+    X_EKF << X(9), X(10), X(11), nav_vel(0), nav_vel(1), nav_vel(2), quat_truth(0), quat_truth(1), quat_truth(2), quat_truth(3), 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0;
 
     // set static accelerometer and gyro biases
     Vector3d ACC_STATIC;
@@ -107,11 +128,11 @@ int main(int argc, char** argv)
     // initialise EKF object
     EKF EKF(X_EKF, ACC_STATIC, GYR_STATIC);
 
+    // initialise controller object
+    Controller CTRL(DT_IMU_0);
+
     // estimate drag (body)
     Vector3d F_drag_body = Veh.DragModel(X);
-
-    // initial control vector
-    U_Trim = U;
 
     // initial IMU inputs
     U_imu = U;
@@ -123,17 +144,20 @@ int main(int argc, char** argv)
     VectorXd imu = Sensors.IMU(X,U_imu);
     double baro_alt = Sensors.Barometer(X);
     VectorXd gps = Sensors.GPS(X);
-    
+
     // initialise processed measurements
-    EKF.RunEKF(imu, gps, baro_alt, DT_IMU_0);    
-  
+    EKF.RunEKF(imu, gps, baro_alt, DT_IMU_0);
+
     std::cout << "---------------- RUN SIMULATION ----------------" << std::endl;
 
     std::ofstream myfile;
 
     myfile.open ("output.csv");
 
-    X_EKF = EKF.GetX();
+    VectorXd X_PVA(12);
+    X_PVA = EKF.GetPVA();
+
+    X_EKF = EKF.GetX(); // get filter outputs
 
     VectorXd euler = EKF.GetEuler();
 
@@ -188,39 +212,42 @@ int main(int argc, char** argv)
            << X_EKF(13) << ", "
            << X_EKF(14) << ", "    //50
            << X_EKF(15) << ", "
+           << X_EKF(16) << ", "
+           << X_EKF(17) << ", "
+           << X_EKF(18) << ", "
            << euler(0) << ", "
            << euler(1) << ", "
            << euler(2) << std::endl;
 
-    // ---------------
-	
-// 	// Set Location/Orientation (sendPOSI)
-// 	// Set Up Position Array
-// 	float POSI[9] = {0.0};
-// 	POSI[0] = (float) LatTrim;     // Lat
-// 	POSI[1] = (float) LonTrim;       // Lon
-// 	POSI[2] = (float) AltTrim;       // Alt
-// 	POSI[3] = 0.0;          // Pitch
-// 	POSI[4] = 0.0;          // Roll
-// 	POSI[5] = (float) (PsiTrim * RAD2DEG); // Heading
-// 
-// 	// Set position of the player aircraft
-// 	sendPOSI(sock, POSI, 7, 0);
-// 
-// 	// pauseSim
-// 	pauseSim(sock, 1); // Sending 1 to pause	
-// 	sleep(5); // Pause for 5 seconds
-// 
-// 	// Unpause
-// 	pauseSim(sock, 0); // Sending 0 to unpause
-// 	printf("- Resuming Simulation\n");
-//             
-//     const char* dref = "sim/operation/override/override_planepath"; // flight model overide data reference
-// 	float result[8] = {1,0,0,0,0,0,0,0};    
-// 	sendDREF(sock, dref, result, 1); // send data to xplane
-    
-    //------------------    
-           
+    //-------------------------------------------------------------------
+
+	// Set Location/Orientation (sendPOSI)
+	// Set Up Position Array
+	float POSI[9] = {0.0};
+	POSI[0] = (float) LatTrim;     // Lat
+	POSI[1] = (float) LonTrim;     // Lon
+	POSI[2] = (float) AltTrim;     // Alt
+	POSI[3] = 0.0;          // Pitch
+	POSI[4] = 0.0;          // Roll
+	POSI[5] = (float) (PsiTrim * RAD2DEG); // Heading
+
+	// Set position of the player aircraft
+	sendPOSI(sock, POSI, 7, 0);
+
+	// pauseSim
+	pauseSim(sock, 1); // Sending 1 to pause
+	sleep(5); // Pause for 5 seconds
+
+	// Unpause
+	pauseSim(sock, 0); // Sending 0 to unpause
+	printf("- Resuming Simulation\n");
+
+    const char* dref = "sim/operation/override/override_planepath"; // flight model overide data reference
+	float result[8] = {1,0,0,0,0,0,0,0};
+	sendDREF(sock, dref, result, 1); // send data to xplane
+
+    //-------------------------------------------------------------------
+
     // clock variable for simulation execution
     clock_t t;
     int f;
@@ -252,25 +279,78 @@ int main(int argc, char** argv)
             t_sim_prev = t; // update time
 
             Veh.Integrate(X,U,DT_SIM_0); // update vehicle states
-            
-//             // populate position vector of current true states for xplane
-//             POSI[0] = (float) (X(13) * RAD2DEG);    // Lat
-//             POSI[1] = (float) (X(12) * RAD2DEG);    // Lon
-//             POSI[2] = (float) (X(14));              // Alt
-//             POSI[3] = (float) (X(7) * RAD2DEG);     // Pitch
-//             POSI[4] = (float) (X(6) * RAD2DEG);     // Roll
-//             POSI[5] = (float) (X(8) * RAD2DEG);     // Heading/Yaw     
-//             
-//             // Set position of aircraft to xplane
-//             sendPOSI(sock, POSI, 7, 0);
-            
+
+            //-------------------------------------------------------------------
+
+            // populate position vector of current true states for xplane
+            POSI[0] = (float) (X(13) * RAD2DEG);    // Lat
+            POSI[1] = (float) (X(12) * RAD2DEG);    // Lon
+            POSI[2] = (float) (X(14));              // Alt
+            POSI[3] = (float) (X(7) * RAD2DEG);     // Pitch
+            POSI[4] = (float) (X(6) * RAD2DEG);     // Roll
+            POSI[5] = (float) (X(8) * RAD2DEG);     // Heading/Yaw
+
+            // Set position of aircraft to xplane
+            sendPOSI(sock, POSI, 7, 0);
+
+            //-------------------------------------------------------------------
+
             if (DT_IMU >= DT_IMU_0) // control loop
             {
                 t_imu_prev = t;
 
+                // ------------------------ GUIDANCE -----------------------------
+
+                // tilt mode switch
+                if (inputs.ax7 == 1 && !tilt_switch_high)
+                {
+                    tilt_mode = !tilt_mode;
+                    tilt_switch_high = true;
+                }
+                else if (inputs.ax7 == 0)
+                {
+                    tilt_switch_high = false;
+                }
+
+                if (tilt_mode)
+                {
+                    // convert joystick inputs into commands
+                    throttle = 1.0 + inputs.ax3; // vertical velocity command (navigation frame)
+                    phiC = roll_command_limit *  inputs.ax0; // bank angle command
+                    thrust = -thrust_command_limit * inputs.ax1; // forward thrust command
+                    qC = pitch_rate_command_limit * inputs.ax5;   // pitch rate command
+                    rC = yaw_rate_command_limit * inputs.ax2;   // yaw rate command
+
+                    // commanded tilt angle
+                    thtC_tilt += qC * DT_IMU_0;
+
+                    // tilt angle limiter
+                    if (thtC_tilt >= pitch_command_limit)
+                    {
+                        thtC_tilt = pitch_command_limit;
+                    }
+                    else if (thtC_tilt <= -pitch_command_limit)
+                    {
+                        thtC_tilt = -pitch_command_limit;
+                    }
+
+                    X_COM << throttle, phiC, thtC_tilt, thrust, rC; // command vector (tilt mode)
+                }
+                else
+                {
+                    // convert joystick inputs into commands
+                    throttle = 1.0 + inputs.ax3; // vertical velocity command (navigation frame)
+                    phiC = roll_command_limit * inputs.ax0; // bank angle command
+                    thtC = pitch_command_limit * inputs.ax1; // pitch angle command
+                    rC = yaw_rate_command_limit * inputs.ax2;   // yaw rate command
+                    thtC_tilt = 0.0;
+
+                    X_COM << throttle, phiC, thtC, 0.0, rC; // command vector (normal mode)
+                }
+
                 // ----------------------- NAVIGATION ----------------------------
 
-                // estimate drag
+                // estimate drag (body axis)
                 F_drag_body = Veh.DragModel(X);
 
                 // IMU inputs
@@ -292,72 +372,17 @@ int main(int argc, char** argv)
                 // estimate vehicle states
                 EKF.RunEKF(imu, gps, baro_alt, DT_IMU_0);
 
-                // ------------------------ GUIDANCE -----------------------------
-
-                // convert joystick inputs into
-                VfC = -5.0 * inputs.ax1; // forward velocity command (navigation frame)
-                VvC = -2.5 * inputs.ax3; // vertical velocity command (navigation frame)
-
-                phiC = 15.0 * inputs.ax0 * DEG2RAD;     // bank angle command
-                dpsiC = 30.0 * inputs.ax2 * DEG2RAD;    // pitch angle command
-                qC = 15.0 * inputs.ax5 * DEG2RAD;       // pitch rate command
-
-                VectorXd dU(n_cont);
-                dU.setZero();
-
-                Matrix3d C_bn_LVLH = Utils.DirectionCosineMatrix(X(6),X(7),0.0);
-                Vector3d VnC;
-                VnC << VfC, 0.0, VvC;
-                Vector3d VbC = C_bn_LVLH * VnC; // body frame speed commands
+                // get PVA data
+                X_PVA = EKF.GetPVA();
 
                 // ------------------------- CONTROL -----------------------------
 
-                double u_error = VbC(0) - X(0);
-                dU(0) = 30.0 * u_error + 10.0 * u_sum * DT_IMU_0;
-
-                if (fabs(u_error) < 5.0)
-                {
-                    u_sum += u_error;
-                }
-                else
-                {
-                    u_sum = 0.0;
-                }
-
-                double w_error = VbC(2) - X(2);
-                dU(2) = 30.0 * w_error + 10.0 * w_sum * DT_IMU_0;
-
-                if (fabs(w_error) < 5.0)
-                {
-                    w_sum += w_error;
-                }
-                else
-                {
-                    w_sum = 0.0;
-                }
-
-                PID phi_cont(1.5, 0.0, 0.0);
-                PID p_cont(0.3, 0.0, 0.0);
-                PID v_cont(0.0, 0.0, 0.0);
-                double p_C = phi_cont.Control(phiC, X(6), DT_IMU_0);
-                double p_out = p_cont.Control(p_C, X(3), DT_IMU_0);
-                double v_out = v_cont.Control(VbC(1), X(1), DT_IMU_0);
-                dU(3) = p_out + v_out;
-
-                PID q_cont(1.0, 0.0, 0.0);
-                double q_out = q_cont.Control(qC, X(4), DT_IMU_0);
-                dU(4) = q_out;
-
-                PID dpsi_cont(0.2, 0.0, 0.0);
-                double dpsi_out = dpsi_cont.Control(dpsiC, X(5), DT_IMU_0);
-                dU(5) = dpsi_out;
-
-                // control input vector
-                U = U_Trim + dU;
+                // control input vector (body force input vector)
+                U = CTRL.RunController(X_COM, X_PVA, tilt_mode);
 
                 // ------------------------- LOGGING -----------------------------
 
-                X_EKF = EKF.GetX(); // get state estimates
+                X_EKF = EKF.GetX(); // get EKF state vector
 
                 euler = EKF.GetEuler(); // get estimated euler angles
 
@@ -421,6 +446,9 @@ int main(int argc, char** argv)
                         << X_EKF(13) << ", "
                         << X_EKF(14) << ", "    //50
                         << X_EKF(15) << ", "
+                        << X_EKF(16) << ", "
+                        << X_EKF(17) << ", "
+                        << X_EKF(18) << ", "
                         << euler(0) << ", "
                         << euler(1) << ", "
                         << euler(2) << std::endl;
