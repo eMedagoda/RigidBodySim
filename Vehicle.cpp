@@ -273,6 +273,12 @@ VectorXd Vehicle::StateRates(VectorXd X, VectorXd U)
     SpeedVec << u, v, w;
     Vector3d PosRates = C_bn.transpose() * SpeedVec;
 
+    // wind vector
+    Vector3d WindVec;
+    WindVec << 0.0, 1.0, 0.0;
+
+    PosRates += WindVec;
+
     // geodetic rates
     double N_RE = R_EA/sqrt(1.0 - ECC*ECC*sin(lat)*sin(lat)); // prime vertical radius of curvature
     double M_RE = (R_EA * (1.0 - ECC*ECC))/sqrt((1.0 - ECC*ECC*sin(lat)*sin(lat))*(1.0 - ECC*ECC*sin(lat)*sin(lat))*(1.0 - ECC*ECC*sin(lat)*sin(lat))); // meridian radius of curvature

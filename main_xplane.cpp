@@ -233,9 +233,9 @@ int main(int argc, char** argv)
 	// Set Location/Orientation (sendPOSI)
 	// Set Up Position Array
 	float POSI[9] = {0.0};
-	POSI[0] = (float) LatTrim;     // Lat
-	POSI[1] = (float) LonTrim;     // Lon
-	POSI[2] = (float) AltTrim;     // Alt
+	POSI[0] = (float) X(9);  // X
+	POSI[1] = (float) X(10); // Y
+	POSI[2] = (float) X(11); // Z
 	POSI[3] = 0.0;          // Pitch
 	POSI[4] = 0.0;          // Roll
 	POSI[5] = (float) (PsiTrim * RAD2DEG); // Heading
@@ -292,9 +292,9 @@ int main(int argc, char** argv)
             //-------------------------------------------------------------------
 
             // populate position vector of current true states for xplane
-            POSI[0] = (float) (X(13) * RAD2DEG);    // Lat
-            POSI[1] = (float) (X(12) * RAD2DEG);    // Lon
-            POSI[2] = (float) (X(14));              // Alt
+            POSI[0] = (float) (X(9));   // X
+            POSI[1] = (float) (X(10));  // Y
+            POSI[2] = (float) (X(11));  // Z
             POSI[3] = (float) (X(7) * RAD2DEG);     // Pitch
             POSI[4] = (float) (X(6) * RAD2DEG);     // Roll
             POSI[5] = (float) (X(8) * RAD2DEG);     // Heading/Yaw
