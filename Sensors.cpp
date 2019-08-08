@@ -147,11 +147,10 @@ VectorXd Sensors::GPS(VectorXd X)
     SpeedVec << X(0), X(1), X(2); // body velocity vector
     Vector3d PosRates = C_bn.transpose() * SpeedVec; // NED velocity vector
 
-    // wind vector
-    Vector3d WindVec;
-    WindVec << 0.0, 1.0, 0.0;
-
-    PosRates += WindVec;
+//     // wind vector
+//     Vector3d WindVec;
+//     WindVec << 0.0, 1.0, 0.0;
+//     PosRates += WindVec;
 
     GPS_measurements(3) = PosRates(0) + dist_gps_vn(generator); // Vn
     GPS_measurements(4) = PosRates(1) + dist_gps_ve(generator); // Ve

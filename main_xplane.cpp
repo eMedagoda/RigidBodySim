@@ -72,6 +72,7 @@ int main(int argc, char** argv)
     U.setZero();
     VectorXd H(5);
     H.setZero();
+    VectorXd H2 = H;
     VectorXd U_Trim(n_cont);
     U_Trim.setZero();
     VectorXd U_imu(n_cont);
@@ -114,6 +115,7 @@ int main(int argc, char** argv)
 
     // calculate motor and servo commands
     H = CTRL.Actuators(U);
+    H2 = CTRL.Actuators2(U);
 
     MatrixXd C_bn = Utils.DirectionCosineMatrix(X(6),X(7),X(8));
     VectorXd body_vel(3);
@@ -391,6 +393,7 @@ int main(int argc, char** argv)
 
                 // calculate motor and servo commands
                 H = CTRL.Actuators(U);
+                H2 = CTRL.Actuators2(U);
 
                 // ------------------------- LOGGING -----------------------------
 
@@ -487,11 +490,11 @@ int main(int argc, char** argv)
                         << euler(0) * RAD2DEG << ", "
                         << euler(1) * RAD2DEG << ", "
                         << euler(2) * RAD2DEG << " | "
-                        << H(0) << ", "
-                        << H(1) << ", "
-                        << H(2) << ", "
-                        << H(3) * RAD2DEG << ", "
-                        << H(4) * RAD2DEG << std::endl;
+                        << H(0) << ", " << H2(0) << ", "
+                        << H(1) << ", " << H2(1) << ", "
+                        << H(2) << ", " << H2(2) << ", "
+                        << H(3) * RAD2DEG << ", " << H2(3) * RAD2DEG << ", "
+                        << H(4) * RAD2DEG << ", " << H2(4) * RAD2DEG << std::endl;
 
 //                 std::cout << std::setprecision(3)
 //                         << std::fixed

@@ -6,11 +6,29 @@
 
 // vehicle properties
 const double MASS = 4.5;
+
 const double L1 = 0.10;
 const double L2 = 0.46;
 const double L3 = 0.10;
 const double L4 = 0.46;
 const double L5 = 0.60;
+const double L6 = 0.05;
+const double L7 = 0.05;
+const double L8 = 0.02;
+
+// body dimensions (NED)
+const double sf1b1 = 0.10;
+const double sf1b2 = -0.46;
+const double sf1b3 = 0.05;
+
+const double sf2b1 = 0.10;
+const double sf2b2 = 0.46;
+const double sf2b3 = 0.05;
+
+const double sf3b1 = -0.60;
+const double sf3b2 = 0.0;
+const double sf3b3 = 0.02;
+
 const double Ixx = 0.13;
 const double Iyy = 0.13;
 const double Izz = 0.26;
@@ -119,8 +137,8 @@ const double K_dalt = 3.0;
 const double K_i_dalt = 1.0;
 const double vertical_speed_limit_upper = 2.5;
 const double vertical_speed_limit_lower = -2.5;
-const double AltitudeControlDeadband = 0.1;
-const double AltitudeHoldVerticalSpeedThreshold = 0.5;
+const double altitude_hold_deadband = 0.1;
+const double altitude_hold_threshold = 0.5;
 const double thrust_factor_limit = 2.0;
 const double thrust_command_limit = 30.0; // N
 
@@ -135,8 +153,8 @@ const double K_i_q = 1.2;
 const double pitch_command_limit = 30.0 * DEG2RAD; // rad
 const double pitch_rate_command_limit = 15.0 * DEG2RAD; // rad
 
-const double YawRateControlDeadband = 10.0 * DEG2RAD; // yaw rate input threshold to engage heading hold
-const double YawHoldYawRateThreshold =  10.0 * DEG2RAD; // yaw rate command threshold for heading hold
+const double yaw_rate_deadband = 10.0 * DEG2RAD; // yaw rate input threshold to engage heading hold
+const double yaw_hold_threshold =  5.0 * DEG2RAD; // yaw rate command threshold for heading hold
 
 const double wrcl = 4.0;
 const double zrcl = 0.95;
@@ -149,5 +167,9 @@ const double yaw_rate_command_limit = 120.0 * DEG2RAD; // rad
 const double g_pos = 0.8;
 const double g_pos_i = 0.2;
 const double g_vel = 1.0;
+const double velocity_hold_threshold = 1.5;
+const double position_hold_threshold = 0.7;
+const double planar_vel_limit = 4.0;
+const double position_integrator_limit = 3.0;
 
 #endif
