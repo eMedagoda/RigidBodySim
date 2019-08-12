@@ -27,11 +27,13 @@ class Controller
         Controller(double DT);
         ~Controller();
 
-        VectorXd RunController(VectorXd X_COM, VectorXd X_PVA, bool tilt_mode);
+        VectorXd RunController(VectorXd X_COM, VectorXd X_PVA, bool tilt_mode, int ctrl_mode);
         VectorXd Actuators(VectorXd U);
         VectorXd Actuators2(VectorXd U);
 
     private:
+
+        VectorXd FlyAttitudeThrottle(VectorXd X_COM);
 
         VectorXd FlyAttitudeAltitude(VectorXd X_COM, bool tilt_mode);
 

@@ -89,6 +89,9 @@ int main(int argc, char** argv)
     // convert joystick inputs into
     bool tilt_mode = false;
     bool tilt_switch_high = false;
+    bool ctrl_mode_switch_throttle = false;
+    bool ctrl_mode_switch_altitude = false;
+    bool ctrl_mode_switch_position = false;
 
     double throttle = 1.0; // vertical velocity command (navigation frame)
     double thrust = 0.0; // forward thrust (navigation frame)
@@ -106,6 +109,15 @@ int main(int argc, char** argv)
     {
         X_COM << throttle, phiC, thtC, 0.0, rC; // command vector
     }
+
+    // define control mode states
+    typedef enum controlmode {
+        CTRL_FLYING_ATTITUDE_THROTTLE,
+        CTRL_FLYING_ATTITUDE_ALTITUDE,
+        CTRL_FLYING_POSITION
+    } ctrl_mode_state_t;
+
+    ctrl_mode_state_t ctrl_mode = CTRL_FLYING_ATTITUDE_THROTTLE;
 
     // determine trim states and controls
     Veh.Trim(X, U, VelTrim, AltTrim, ThetaTrim, PsiTrim, LonTrim, LatTrim);
@@ -132,7 +144,7 @@ int main(int argc, char** argv)
     Vector3d ACC_STATIC;
     ACC_STATIC << 0.0, 0.0, 0.0;
     Vector3d GYR_STATIC;
-    GYR_STATIC << 0.0, 0.0, 0.0;
+    GYR_STATIC << -0.1, -0.03, 0.21;
 
     // initialise EKF object
     EKF EKF(X_EKF, ACC_STATIC, GYR_STATIC);
@@ -245,13 +257,13 @@ int main(int argc, char** argv)
 	// Set position of the player aircraft
 	sendPOSI(sock, POSI, 7, 0);
 
-	// pauseSim
-	pauseSim(sock, 1); // Sending 1 to pause
-	sleep(5); // Pause for 5 seconds
-
-	// Unpause
-	pauseSim(sock, 0); // Sending 0 to unpause
-	printf("- Resuming Simulation\n");
+// 	// pauseSim
+// 	pauseSim(sock, 1); // Sending 1 to pause
+// 	sleep(5); // Pause for 5 seconds
+//
+// 	// Unpause
+// 	pauseSim(sock, 0); // Sending 0 to unpause
+// 	printf("- Resuming Simulation\n");
 
     const char* dref = "sim/operation/override/override_planepath"; // flight model overide data reference
 	float result[8] = {1,0,0,0,0,0,0,0};
@@ -304,6 +316,63 @@ int main(int argc, char** argv)
             // Set position of aircraft to xplane
             sendPOSI(sock, POSI, 7, 0);
 
+//             float val;
+//             const char* dref;
+//
+//             dref = "sim/flightmodel/position/indicated_airspeed";
+//             val = sqrt(X_PVA(3)*X_PVA(3) + X_PVA(4)*X_PVA(4));
+//             sendDREF(sock, dref, &val, 1);
+//
+//             dref = "sim/flightmodel/position/indicated_airspeed2";
+//             val = sqrt(X_PVA(3)*X_PVA(3) + X_PVA(4)*X_PVA(4));
+//             sendDREF(sock, dref, &val, 1);
+//
+//             dref = "sim/flightmodel/position/vh_ind_fpm";
+//             val = -X_PVA(5);
+//             sendDREF(sock, dref, &val, 1);
+//
+//             dref = "sim/cockpit/electrical/HUD_on";
+//             val = 1;
+//             sendDREF(sock, dref, &val, 1);
+//
+//             dref = "sim/cockpit/electrical/HUD_brightness";
+//             val = 1;
+//             sendDREF(sock, dref, &val, 1);
+//
+//             //----------------------
+//
+//             dref = "sim/cockpit/gyros/the_vac_ind_deg";
+//             val = 10.0F;
+//             sendDREF(sock, dref, &val, 1);
+//
+//             dref = "sim/cockpit/gyros/the_elec_ind_deg";
+//             val = 10.0F;
+//             sendDREF(sock, dref, &val, 1);
+//
+//             dref = "sim/cockpit/gyros/the_ind_deg3";
+//             val = 10.0F;
+//             sendDREF(sock, dref, &val, 1);
+//
+//             dref = "sim/cockpit/gyros/the_ind_deg4";
+//             val = 10.0F;
+//             sendDREF(sock, dref, &val, 1);
+//
+//             dref = "sim/cockpit/gyros/the_vac_pilot_deg";
+//             val = 10.0F;
+//             sendDREF(sock, dref, &val, 1);
+//
+//             dref = "sim/cockpit/gyros/the_elec_pilot_deg";
+//             val = 10.0F;
+//             sendDREF(sock, dref, &val, 1);
+//
+//             dref = "sim/cockpit/gyros/the_vac_copilot_deg";
+//             val = 10.0F;
+//             sendDREF(sock, dref, &val, 1);
+//
+//             dref = "sim/cockpit/gyros/the_elec_copilot_deg";
+//             val = 10.0F;
+//             sendDREF(sock, dref, &val, 1);
+
             //-------------------------------------------------------------------
 
             if (DT_IMU >= DT_IMU_0) // control loop
@@ -323,7 +392,41 @@ int main(int argc, char** argv)
                     tilt_switch_high = false;
                 }
 
-                if (tilt_mode)
+                // control mode switch (throttle)
+                if (inputs.ax10 == 1 && !ctrl_mode_switch_throttle)
+                {
+                    ctrl_mode = CTRL_FLYING_ATTITUDE_THROTTLE;
+                    ctrl_mode_switch_throttle = true;
+                }
+                else if (inputs.ax10 == 0)
+                {
+                    ctrl_mode_switch_throttle = false;
+                }
+
+                // control mode switch (altitude)
+                if (inputs.ax8 == 1 && !ctrl_mode_switch_altitude)
+                {
+                    ctrl_mode = CTRL_FLYING_ATTITUDE_ALTITUDE;
+                    ctrl_mode_switch_altitude = true;
+                }
+                else if (inputs.ax8 == 0)
+                {
+                    ctrl_mode_switch_altitude = false;
+                }
+
+                // control mode switch (position)
+                if (inputs.ax9 == 1 && !ctrl_mode_switch_position)
+                {
+                    ctrl_mode = CTRL_FLYING_POSITION;
+                    ctrl_mode_switch_position = true;
+                }
+                else if (inputs.ax9 == 0)
+                {
+                    ctrl_mode_switch_position = false;
+                }
+
+                // tilt mode only available in altitude or position hold mode
+                if (tilt_mode && ((ctrl_mode == CTRL_FLYING_ATTITUDE_ALTITUDE) || (ctrl_mode == CTRL_FLYING_POSITION)))
                 {
                     // convert joystick inputs into commands
                     throttle = 1.0 + inputs.ax3; // vertical velocity command (navigation frame)
@@ -389,7 +492,7 @@ int main(int argc, char** argv)
                 // ------------------------- CONTROL -----------------------------
 
                 // control input vector (body force input vector)
-                U = CTRL.RunController(X_COM, X_PVA, tilt_mode);
+                U = CTRL.RunController(X_COM, X_PVA, tilt_mode, ctrl_mode);
 
                 // calculate motor and servo commands
                 H = CTRL.Actuators(U);
@@ -490,11 +593,13 @@ int main(int argc, char** argv)
                         << euler(0) * RAD2DEG << ", "
                         << euler(1) * RAD2DEG << ", "
                         << euler(2) * RAD2DEG << " | "
-                        << H(0) << ", " << H2(0) << ", "
-                        << H(1) << ", " << H2(1) << ", "
-                        << H(2) << ", " << H2(2) << ", "
-                        << H(3) * RAD2DEG << ", " << H2(3) * RAD2DEG << ", "
-                        << H(4) * RAD2DEG << ", " << H2(4) * RAD2DEG << std::endl;
+                        << H(0) << ", "
+                        << H(1) << ", "
+                        << H(2) << ", "
+                        << H(3) * RAD2DEG << ", "
+                        << H(4) * RAD2DEG << " | "
+                        << ctrl_mode << ", "
+                        << tilt_mode << std::endl;
 
 //                 std::cout << std::setprecision(3)
 //                         << std::fixed

@@ -124,6 +124,9 @@ public:
     double ax5 = 0;
     int    ax6 = 0;
     int    ax7 = 0;
+    int    ax8 = 0;
+    int    ax9 = 0;
+    int   ax10 = 0;
   };
 
   /**

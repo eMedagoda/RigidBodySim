@@ -36,17 +36,17 @@ Controller::~Controller()
 {
 }
 
-VectorXd Controller::RunController(VectorXd X_COM, VectorXd X_PVA, bool tilt_mode)
+VectorXd Controller::RunController(VectorXd X_COM, VectorXd X_PVA, bool tilt_mode, int ctrl_mode)
 {
     VectorXd dU(6);
     dU.setZero();
 
     // attitude control states
     m_roll = X_PVA(6);
-    m_roll_rate = X_PVA(9);
     m_pitch = X_PVA(7);
-    m_pitch_rate = X_PVA(10);
     m_yaw = X_PVA(8); // current vehicle yaw
+    m_roll_rate = X_PVA(9);
+    m_pitch_rate = X_PVA(10);
     m_yaw_rate = X_PVA(11); // current vehicle yaw rate
 
     // altitude control states
@@ -60,14 +60,128 @@ VectorXd Controller::RunController(VectorXd X_COM, VectorXd X_PVA, bool tilt_mod
     m_vel_y = X_PVA(4);
     m_vel_horizontal = sqrt((m_vel_x * m_vel_x) + (m_vel_y * m_vel_y));
 
-//     dU = FlyAttitudeAltitude(X_COM, tilt_mode);
+    // throttle mode selected
+    if (ctrl_mode == 0)
+    {
+        dU = FlyAttitudeThrottle(X_COM);
+    }
 
-    dU = FlyPosition(X_COM, tilt_mode);
+    // altitude hold mode selected
+    if (ctrl_mode ==  1)
+    {
+        dU = FlyAttitudeAltitude(X_COM, tilt_mode);
+    }
+
+    // position hold mode selected
+    if (ctrl_mode == 2)
+    {
+        dU = FlyPosition(X_COM, tilt_mode);
+    }
 
     // calculate motor and servo commands
     m_H = Actuators(dU);
 
     return dU;
+}
+
+VectorXd Controller::FlyAttitudeThrottle(VectorXd X_COM)
+{
+    Utils Utils;
+
+    VectorXd U(6);
+    U.setZero();
+
+    // initialise desired commands
+    double desired_vertical_force = 0.0;
+    double desired_roll_moment = 0.0;
+    double desired_pitch_moment = 0.0;
+    double desired_yaw_moment = 0.0;
+
+    // guidance commands
+    double throttle_command = X_COM(0); // throttle command (lift, positive up)
+    double roll_command = X_COM(1);     // roll command
+    double pitch_command = X_COM(2);    // pitch/tilt command
+    double yaw_rate_command = X_COM(4); // yaw rate command (body axis)
+
+    // --------------------------- Altitude Control ---------------------------
+
+    desired_vertical_force = throttle_command * MASS * GRAVITY;
+
+    // --------------------------- Attitude Control ---------------------------
+
+    desired_roll_moment = RollControl(roll_command);
+    desired_pitch_moment = PitchControl(pitch_command);
+
+    // --------------------------- Heading Control ----------------------------
+
+    static yaw_hold_state_t yaw_hold_state = YAW_HOLD_DISABLE;
+    static double yaw_command = m_yaw;
+
+    if ((fabs(yaw_rate_command) < yaw_rate_deadband)) // if yaw stick is centred
+    {
+        if (yaw_hold_state == YAW_HOLD_DISABLE) // if not in a yaw holding state
+        {
+            yaw_rate_command = 0.0; // set commanded yaw rate to zero
+            yaw_command = m_yaw; // update current yaw command
+
+            yaw_hold_state = YAW_HOLD_YAW_RATE; // transition to velocity hold state
+        }
+
+        if (yaw_hold_state == YAW_HOLD_YAW_RATE) // if in velocity hold state
+        {
+            yaw_command = m_yaw; // update current altitude command
+
+            if (fabs(m_yaw_rate) < yaw_hold_threshold) // if yaw rate drops below threshold
+            {
+                yaw_hold_state = YAW_HOLD_YAW; // transition to yaw hold state
+            }
+            else
+            {
+                // run yaw rate controller, output Mz
+                desired_yaw_moment = YawRateControl(yaw_rate_command);
+            }
+        }
+
+        if (yaw_hold_state == YAW_HOLD_YAW) // if in yaw hold state
+        {
+            // run yaw hold controller (only when yaw stick has been re-centred)
+            desired_yaw_moment = YawControl(yaw_command);
+        }
+    }
+    else // if yaw rate commands have been issued (yaw rate command)
+    {
+        yaw_hold_state = YAW_HOLD_DISABLE; // transition to manoeuvre state
+
+        // run yaw rate controller, output Mz
+        desired_yaw_moment = YawRateControl(yaw_rate_command);
+
+        // update current yaw command
+        yaw_command = m_yaw;
+    }
+
+    // ------------------------------------------------------------------------
+
+    // command forces in navigation frame (NED)
+    Vector3d F_desired_local;
+    F_desired_local(0) = 0.0;
+    F_desired_local(1) = 0.0;
+    F_desired_local(2) = -desired_vertical_force;
+
+    // navigation to body
+    MatrixXd C_bn = Utils.DirectionCosineMatrix(m_roll, m_pitch, m_yaw);
+
+    // command forces in body frame
+    Vector3d F_desired_body = C_bn * F_desired_local;
+
+    // if flying in normal mode
+    U(0) = 0.0;
+    U(1) = 0.0;
+    U(2) = F_desired_body(2);
+    U(3) = desired_roll_moment;
+    U(4) = desired_pitch_moment;
+    U(5) = desired_yaw_moment;
+
+    return U;
 }
 
 VectorXd Controller::FlyAttitudeAltitude(VectorXd X_COM, bool tilt_mode)
@@ -394,22 +508,6 @@ VectorXd Controller::FlyAttitudeAltitude(VectorXd X_COM, bool tilt_mode)
         desired_roll_moment = RollControl(attitude_commands(0));
         desired_pitch_moment = PitchControl(attitude_commands(1));
     }
-
-//     std::cout << std::setprecision(3)
-//             << std::fixed
-//             << pos_hold_state << ", "
-//             << tilt_mode << " | "
-//             << X_com << ", "
-//             << pos_x << " | "
-//             << Y_com << ", "
-//             << pos_y << " | "
-//             << vel_x << ", "
-//             << vel_y << " | "
-//             << attitude_commands(0) * RAD2DEG << ", "
-//             << roll * RAD2DEG << " | "
-//             << attitude_commands(1) * RAD2DEG << ", "
-//             << pitch * RAD2DEG << " | "
-//             << attitude_commands(2) << std::endl;
 
     // --------------------------- Heading Control ----------------------------
 

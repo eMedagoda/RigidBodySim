@@ -106,6 +106,18 @@ void Joystick::GetInputs(jinput &inputs, JoystickEvent event)
     {
         inputs.ax7 = event.value;
     }
+    if (event.isButton() && event.number == 2)
+    {
+        inputs.ax8 = event.value;
+    }
+    if (event.isButton() && event.number == 3)
+    {
+        inputs.ax9 = event.value;
+    }
+    if (event.isButton() && event.number == 4)
+    {
+        inputs.ax10 = event.value;
+    }
 }
 
 std::ostream& operator<<(std::ostream& os, const JoystickEvent& e)
