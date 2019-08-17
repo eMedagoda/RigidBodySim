@@ -5,6 +5,7 @@
 #include "MathConstants.h"
 #include <cmath>
 #include <iostream>
+#include <iomanip>
 
 EKF::EKF(VectorXd X, VectorXd acc_static_bias, VectorXd gyr_static_bias)
 {
@@ -131,55 +132,63 @@ void EKF::RunEKF(VectorXd imu_data, VectorXd gps_data, double baro_data, double 
 
     //---------------------------------------------
 
-    Vector3d mag_attitude;
-    mag_attitude(0) = imu_data(6);
-    mag_attitude(1) = imu_data(7);
-    mag_attitude(2) = imu_data(8);
-
-    // convert attitude measurement from magnetometer into quaternion vector
-    VectorXd quat_measurement = Utils.EulerToQuaternion(mag_attitude(0), mag_attitude(1), mag_attitude(2));
+//     Vector3d mag_attitude;
+//     mag_attitude(0) = imu_data(6);
+//     mag_attitude(1) = imu_data(7);
+//     mag_attitude(2) = imu_data(8);
+//
+//     // convert attitude measurement from magnetometer into quaternion vector
+//     VectorXd quat_measurement = Utils.EulerToQuaternion(mag_attitude(0), mag_attitude(1), mag_attitude(2));
 
     //---------------------------------------------
 
-//     // magnetometer measurements
-//     Vector3d U_mag;
-//     U_mag << imu_data(6), imu_data(7), imu_data(8);
-//
-//     // current attitude quaternion
-//     VectorXd quat_current(4);
-//     quat_current(0) = m_X(6);
-//     quat_current(1) = m_X(7);
-//     quat_current(2) = m_X(8);
-//     quat_current(3) = m_X(9);
-//
-//     // navigation to body
-//     Matrix3d C_bn_current = Utils.QuatToDirectionCosineMatrix(quat_current);
-//
-//     // navigation to magnetic
-//     Matrix3d C_mn = Utils.DirectionCosineMatrix(0.0, MAG_ELE, MAG_AZI);
-//
-//     // unit vector of north in magetic field frame
-//     Vector3d U_mag0;
-//     U_mag0 << 1.0, 0.0, 0.0;
-//
-//     // predicted mag vector
-//     Vector3d U_mag_pred = C_bn_current * C_mn.transpose() * U_mag0;
-//
-// //     // rotation correction (DCM)
-// //     Matrix3d C_bn_mag_correction = Utils.VectorRotation(U_mag_pred, U_mag);
-// //
-// //     // magnetic attitude measurement
-// //     Matrix3d C_bn_mag = C_bn_mag_correction * C_bn_current;
-// //     Vector3d euler_mag = Utils.DirectionCosineMatrixToEuler(C_bn_mag);
-// //     Utils.PiMinusPi(euler_mag(2));
-//
-//     // rotation correction (quat)
-//     VectorXd quat_mag_correction = Utils.QuaternionTwoVectors(U_mag, U_mag_pred);
-//     VectorXd quat_mag = Utils.QuaternionProduct(quat_current, quat_mag_correction);
-//     Utils.QuaternionNormalise(quat_mag);
-//     Vector3d euler_mag = Utils.QuatToEuler(quat_mag);
-//
-//     VectorXd quat_measurement = Utils.EulerToQuaternion(euler_mag(0), euler_mag(1), euler_mag(2));
+    // magnetometer measurements
+    Vector3d U_mag;
+    U_mag << imu_data(6), imu_data(7), imu_data(8);
+
+    // current attitude quaternion
+    VectorXd quat_current(4);
+    quat_current(0) = m_X(6);
+    quat_current(1) = m_X(7);
+    quat_current(2) = m_X(8);
+    quat_current(3) = m_X(9);
+
+    // navigation to body
+    Matrix3d C_bn_current = Utils.QuatToDirectionCosineMatrix(quat_current);
+
+    // navigation to magnetic
+    Matrix3d C_mn = Utils.DirectionCosineMatrix(0.0, MAG_ELE, MAG_AZI);
+
+    // unit vector of north in magetic field frame
+    Vector3d U_mag0;
+    U_mag0 << 1.0, 0.0, 0.0;
+
+    // predicted mag vector
+    Vector3d U_mag_pred = C_bn_current * C_mn.transpose() * U_mag0;
+
+    // rotation correction measurement (magnetometer)
+    VectorXd quat_mag_correction = Utils.QuaternionTwoVectors(U_mag, U_mag_pred); // rotation difference between measured and predicted vectors
+    VectorXd quat_mag = Utils.QuaternionProduct(quat_current, quat_mag_correction); // apply correction to current rotation
+    Utils.QuaternionNormalise(quat_mag); // measured magnetometer attitude
+    Vector3d euler_mag = Utils.QuatToEuler(quat_mag);
+
+    //---------------------------------------------
+
+    // specific force unit vector measurements
+    Vector3d U_spf;
+    U_spf << imu_data(9), imu_data(10), imu_data(11);
+
+    // unit vector of reference specific force in hover
+    Vector3d U_spf0;
+    U_spf0 << 0.0, 0.0, -1.0;
+
+    // attitude measurement (gravity vector - usable when vehicle is hvoering, provides roll and pitch measurements)
+    VectorXd quat_spf = Utils.QuaternionTwoVectors(U_spf, U_spf0); // rotation between expected gravity vector and current acceleration vector
+    Utils.QuaternionNormalise(quat_spf);
+    Vector3d euler_grv = Utils.QuatToEuler(quat_spf);
+    euler_grv(2) = euler_mag(2); // add magnetometer heading measurement to attitude vector
+    quat_spf = Utils.EulerToQuaternion(euler_grv(0), euler_grv(1), euler_grv(2));
+    Utils.QuaternionNormalise(quat_spf);
 
     //---------------------------------------------
 
@@ -213,6 +222,7 @@ void EKF::RunEKF(VectorXd imu_data, VectorXd gps_data, double baro_data, double 
     gravity.setZero();
     gravity(2) = GRAVITY;
 
+    // vehicle acceleration (NED)
     Vector3d acceleration = C_bn.transpose() * specific_forces + gravity;
 
     // velocity predicion (NED)
@@ -231,6 +241,11 @@ void EKF::RunEKF(VectorXd imu_data, VectorXd gps_data, double baro_data, double 
     m_X(8) = quat(2);
     m_X(9) = quat(3);
 
+    // measurement quaternion
+    VectorXd quat_measurement = quat_mag; // use magnetometer measured attitude
+//     VectorXd quat_measurement = quat_spf; // use gravity vector measured attitude
+
+    // quaternion error
     VectorXd del_quat = quat - quat_measurement;
 
     double del_quat_norm = sqrt(del_quat(0)*del_quat(0) + del_quat(1)*del_quat(1) + del_quat(2)*del_quat(2) + del_quat(3)*del_quat(3));
@@ -280,12 +295,15 @@ void EKF::RunEKF(VectorXd imu_data, VectorXd gps_data, double baro_data, double 
 
     // --------------------------------------------------------------------
 
+    // set identity matrix
     MatrixXd I(16,16);
     I.setIdentity();
 
     // initial m_eX = 0.0 (set to zero every loop)
     VectorXd err_X(16);
     err_X.setZero();
+
+    // perform prediction step
 
     // formulate state transition matrix F
     MatrixXd F = StateTransitionMatrix(quat, gyro_rates, specific_forces);
@@ -294,20 +312,23 @@ void EKF::RunEKF(VectorXd imu_data, VectorXd gps_data, double baro_data, double 
     MatrixXd PHI(16,16);
     PHI = I + F * DT;
 
+    // state prediction
 	err_X = PHI * err_X;
+
+    // covariance prediction
 	m_P = (PHI * m_P * PHI.transpose()) + m_Q;
 
     // perform update step
 
-    // Computing filter gain
+    // computing filter gain
     MatrixXd S = m_H * m_P * m_H.transpose() + m_R;
-	MatrixXd K = m_P * m_H.transpose() * S.inverse();
+    MatrixXd K = m_P * m_H.transpose() * S.inverse();
 
-	// State Correction
+    // state correction
 	err_X = err_X + K * (e_Z - m_H * err_X);
 
-	// Covariance Correction
-	m_P = (I - K * m_H) * m_P;
+    // covariance correction
+    m_P = (I - K * m_H) * m_P;
 
     // --------------------------------------------------------------------
 

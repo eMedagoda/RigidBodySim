@@ -32,7 +32,7 @@ VectorXd Sensors::IMU(VectorXd X, VectorXd U)
 
     Utils Utils;
 
-    VectorXd IMU_measurements(9);
+    VectorXd IMU_measurements(12);
     IMU_measurements.setZero();
 
     // Accelerometer measurements
@@ -48,73 +48,50 @@ VectorXd Sensors::IMU(VectorXd X, VectorXd U)
     //----------------------------------------------------------------------
 
     // Magnetometer measurements (returned as roll, pitch and yaw)
-    IMU_measurements(6) = X(6) + dist_gyr_phi(generator);
-    IMU_measurements(7) = X(7) + dist_gyr_tht(generator);
-    IMU_measurements(8) = X(8) + dist_gyr_psi(generator);
-    Utils.PiMinusPi(IMU_measurements(8));
+
+//     IMU_measurements(6) = X(6) + dist_gyr_phi(generator);
+//     IMU_measurements(7) = X(7) + dist_gyr_tht(generator);
+//     IMU_measurements(8) = X(8) + dist_gyr_psi(generator);
+//     Utils.PiMinusPi(IMU_measurements(8));
 
     //----------------------------------------------------------------------
 
-//     // add noise to true attitude
-//     double phi_temp = X(6) + dist_gyr_phi(generator);
-//     double tht_temp = X(7) + dist_gyr_tht(generator);
-//     double psi_temp = X(8) + dist_gyr_psi(generator);
-//     Utils.PiMinusPi(psi_temp);
-//
-//     // unit vector of north in magetic field frame
-//     Vector3d U_mag0;
-//     U_mag0 << 1.0, 0.0, 0.0;
-//
-//     // navigation to magnetic
-//     Matrix3d C_mn = Utils.DirectionCosineMatrix(0.0, MAG_ELE, MAG_AZI);
-//
-//     // navigation to body
-//     Matrix3d C_bn = Utils.DirectionCosineMatrix(phi_temp, tht_temp, psi_temp);
-//     VectorXd quat = Utils.EulerToQuaternion(phi_temp, tht_temp, psi_temp);
-//
-//     // unit vector describing magnetic north vector in body axis
-//     Vector3d U_mag = C_bn * C_mn.transpose() * U_mag0;
-//
-//     // Magnetometer measurements (returned as roll, pitch and yaw)
-//     IMU_measurements(6) = U_mag(0);
-//     IMU_measurements(7) = U_mag(1);
-//     IMU_measurements(8) = U_mag(2);
-//
-//     // -- TEST --
-//
-// //     tht_temp -= 0.0*DEG2RAD;
-// //     psi_temp += 0.0*DEG2RAD;
-// //
-// //     // navigation to body
-// //     Matrix3d C_bn2 = Utils.DirectionCosineMatrix(phi_temp, tht_temp, psi_temp);
-// //
-// //     // predicted mag vector
-// //     Vector3d U_mag_pred = C_bn2 * C_mn.transpose() * U_mag0;
-// //
-// //     // rotation correction
-// // //     Matrix3d C_bn_mag_correction = Utils.VectorRotation(U_mag_pred, U_mag);
-// //     VectorXd quat_mag_correction = Utils.QuaternionTwoVectors(U_mag, U_mag_pred);
-// //     VectorXd quat_mag = Utils.QuaternionProduct(quat_mag_correction, quat);
-// //     Utils.QuaternionNormalise(quat_mag_correction);
-// //     Vector3d euler_mag = Utils.QuatToEuler(quat_mag_correction);
-//
-// //     std::cout << std::setprecision(3)
-// //               << std::fixed
-// //               << quat_mag_correction(0) << ", "
-// //               << quat_mag_correction(1) << ", "
-// //               << quat_mag_correction(2) << ", "
-// //               << quat_mag_correction(3) << std::endl;
-//
-// //     // magnetic attitude measurement
-// //     Matrix3d C_bn_mag = C_bn_mag_correction * C_bn;
-// //     Vector3d euler_mag = Utils.DirectionCosineMatrixToEuler(C_bn_mag);
-// //
-// //     std::cout << std::setprecision(3)
-// //               << std::fixed
-// //               << IMU_measurements(6) * RAD2DEG << ", " << IMU_measurements(7) * RAD2DEG << ", "<< IMU_measurements(8) * RAD2DEG << ", "
-// //               << euler_mag(0) * RAD2DEG << ", " << euler_mag(1) * RAD2DEG << ", " << euler_mag(2) * RAD2DEG << ", " << std::endl;
+    // Magnetometer measurements (returned magnetometer unit vector)
+
+    // add noise to true attitude
+    double phi_temp = X(6) + dist_gyr_phi(generator);
+    double tht_temp = X(7) + dist_gyr_tht(generator);
+    double psi_temp = X(8) + dist_gyr_psi(generator);
+    Utils.PiMinusPi(psi_temp);
+
+    // unit vector of north in magetic field frame
+    Vector3d U_mag0;
+    U_mag0 << 1.0, 0.0, 0.0;
+
+    // navigation to magnetic
+    Matrix3d C_mn = Utils.DirectionCosineMatrix(0.0, MAG_ELE, MAG_AZI);
+
+    // navigation to body (noisy)
+    Matrix3d C_bn_temp = Utils.DirectionCosineMatrix(phi_temp, tht_temp, psi_temp);
+    VectorXd quat = Utils.EulerToQuaternion(phi_temp, tht_temp, psi_temp);
+
+    // unit vector describing magnetic north vector in body axis
+    Vector3d U_mag = C_bn_temp * C_mn.transpose() * U_mag0;
+
+    // Magnetometer measurements (returned as roll, pitch and yaw)
+    IMU_measurements(6) = U_mag(0);
+    IMU_measurements(7) = U_mag(1);
+    IMU_measurements(8) = U_mag(2);
 
     //----------------------------------------------------------------------
+
+    // specific force magnitude
+    double U_spf_norm = sqrt(IMU_measurements(0) * IMU_measurements(0) + IMU_measurements(1) * IMU_measurements(1) + IMU_measurements(2) * IMU_measurements(2));
+
+    // Specfic force measurements (returned accelerometer unit vector)
+    IMU_measurements(9)  = IMU_measurements(0)/U_spf_norm;
+    IMU_measurements(10) = IMU_measurements(1)/U_spf_norm;
+    IMU_measurements(11) = IMU_measurements(2)/U_spf_norm;
 
     return IMU_measurements;
 }

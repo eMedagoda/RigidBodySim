@@ -318,7 +318,7 @@ VectorXd Controller::FlyAttitudeAltitude(VectorXd X_COM, bool tilt_mode)
     F_desired_local(2) = -desired_vertical_force;
 
     // navigation to body
-    MatrixXd C_bn = Utils.DirectionCosineMatrix(m_roll, m_pitch, m_yaw);
+    MatrixXd C_bn = Utils.DirectionCosineMatrix(m_roll, m_pitch, 0.0);
 
     // command forces in body frame
     Vector3d F_desired_body = C_bn * F_desired_local;
@@ -565,7 +565,7 @@ VectorXd Controller::FlyAttitudeAltitude(VectorXd X_COM, bool tilt_mode)
     F_desired_local(2) = -desired_vertical_force;
 
     // navigation to body
-    MatrixXd C_bn = Utils.DirectionCosineMatrix(m_roll, m_pitch, m_yaw);
+    MatrixXd C_bn = Utils.DirectionCosineMatrix(m_roll, m_pitch, 0.0);
 
     // command forces in body frame
     Vector3d F_desired_body = C_bn * F_desired_local;
@@ -596,13 +596,32 @@ VectorXd Controller::FlyAttitudeAltitude(VectorXd X_COM, bool tilt_mode)
 
  double Controller::AltitudeHold(double altitude_command)
 {
+    // initialise integrator states
+    static double ff = 0.0;
+    static double ffd = 0.0;
+
+    // compute altitude error
+    double altitude_error = altitude_command - m_altitude;
+
+    // vertical speed integrator loop
+    if (fabs(altitude_error) < altitude_integrator_limit) // if vertical speed error is within 0.5 m/s, enable integrator
+    {
+        ff = IntegrateScalar(altitude_error, ffd, ff);
+        ffd = altitude_error;
+    }
+    else // else, clear integrator states
+    {
+        ff = 0.0;
+        ffd = 0.0;
+    }
+
     //altitude rate command
-    double vertical_speed_command = K_alt * (altitude_command - m_altitude); // altitude loop, output is a vertical speed command (altitude positive up)
+    double vertical_speed_command = K_alt * altitude_error + K_i_alt * ff; // altitude loop, output is a vertical speed command (altitude positive up)
 
     // apply vertical speed limits
     VerticalSpeedLimiter(vertical_speed_command);
 
-    // run vertical speed controller
+    // run vertical speed controllers
     double Fz = VerticalSpeedControl(vertical_speed_command);
 
     return Fz;
@@ -617,9 +636,6 @@ double Controller::VerticalSpeedControl(double vertical_speed_command)
     // compute vertical speed error
     double vertical_speed_error = vertical_speed_command - m_vertical_speed;
 
-    // compute acceleration command, output is an acceleration command (positive up)
-    double a_comm = K_dalt * vertical_speed_error;
-
     // vertical speed integrator loop
     if (fabs(vertical_speed_error) < altitude_hold_threshold) // if vertical speed error is within 0.5 m/s, enable integrator
     {
@@ -632,8 +648,8 @@ double Controller::VerticalSpeedControl(double vertical_speed_command)
         eed = 0.0;
     }
 
-    // add integral action, when hovering a_comm = AGRAV
-    a_comm += K_i_dalt * ee + GRAVITY;
+    // // compute acceleration command, output is an acceleration command (positive up), add integral action, when hovering a_comm = AGRAV
+    double a_comm = K_dalt * vertical_speed_error + K_i_dalt * ee + GRAVITY;
 
     // thrust command (vertical, should equal vehicle weight when hovering - this in navigation frame)
     double Fz = MASS * a_comm;
@@ -678,7 +694,7 @@ double Controller::PitchControl(double pitch_command)
     double etht = pitch_command - m_pitch;
 
     // pitch angle integrator loop
-    if (fabs(etht) < (10.0 * DEG2RAD)) // if pitch angle error is within 10.0 deg, enable integrator
+    if (fabs(etht) < pitch_integrator_limit) // if pitch angle error is within limit, enable integrator
     {
         bb = IntegrateScalar(etht, bbd, bb);
         bbd = etht;
@@ -750,7 +766,8 @@ Vector3d Controller::VelocityHold(double Vx_com, double Vy_com)
     Vector3d attitude_commands;
     attitude_commands.setZero();
 
-    double force_sum = (m_H(0) * cos(-m_H(4)) + m_H(1) * cos(m_H(4)) + m_H(2)); // total vertical force (body axis, magnitude)
+    // total vertical force (body axis, magnitude)
+    double force_sum = (m_H(0) * cos(-m_H(4)) + m_H(1) * cos(m_H(4)) + m_H(2));
 
     // align velocity to current heading
     double vel_x_body = cos(m_yaw) * m_vel_x + sin(m_yaw) * m_vel_y; // heading aligned LVLH forward velocity

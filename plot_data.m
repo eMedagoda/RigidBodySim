@@ -2,6 +2,8 @@ function plot_data(col)
 
 M = csvread("build/output.csv");
 
+col2 = strcat(col,'.');
+
 figure(1)
 subplot(4,1,1)
 plot(M(:,1),M(:,2),col,'Linewidth',2)
@@ -55,6 +57,13 @@ plot(M(:,1),M(:,10)*180/pi,'r','Linewidth',2)
 title('\psi')
 
 figure(4)
+plot(M(:,30),M(:,29),'g.','Linewidth',2)
+hold on
+plot(M(:,37),M(:,36),col2,'Linewidth',2)
+plot(M(:,12),M(:,11),'r','Linewidth',2)
+axis equal
+
+figure(5)
 subplot(3,1,1)
 plot(M(:,1),M(:,29),'g','Linewidth',2)
 hold on
@@ -74,7 +83,7 @@ plot(M(:,1),M(:,38),col,'Linewidth',2)
 plot(M(:,1),M(:,13),'r','Linewidth',2)
 title('Z')
 
-figure(5)
+figure(6)
 subplot(3,2,1)
 plot(M(:,1),M(:,20),col,'Linewidth',2)
 hold on
@@ -100,7 +109,7 @@ plot(M(:,1),M(:,48),col,'Linewidth',2)
 hold on
 title('b_{az}')
 
-figure(6)
+figure(7)
 subplot(3,2,1)
 plot(M(:,1),M(:,23)*180/pi,col,'Linewidth',2)
 hold on
@@ -126,7 +135,7 @@ plot(M(:,1),M(:,51)*180/pi,col,'Linewidth',2)
 hold on
 title('b_{gz}')
 
-figure(7)
+figure(8)
 title('GPS')
 subplot(3,2,1)
 plot(M(:,1),M(:,36),col,'Linewidth',2)
@@ -147,7 +156,7 @@ subplot(3,2,6)
 plot(M(:,1),M(:,41),col,'Linewidth',2)
 title('V_{d}')
 
-figure(8)
+figure(9)
 title('Fan Forces')
 subplot(3,1,1)
 plot(M(:,1),M(:,58),col,'Linewidth',2)
@@ -159,7 +168,7 @@ subplot(3,1,3)
 plot(M(:,1),M(:,60),col,'Linewidth',2)
 title('F_{T}')
 
-figure(9)
+figure(10)
 title('Servo')
 subplot(2,1,1)
 plot(M(:,1),M(:,61)*180/pi,col,'Linewidth',2)

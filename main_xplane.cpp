@@ -112,12 +112,12 @@ int main(int argc, char** argv)
 
     // define control mode states
     typedef enum controlmode {
-        CTRL_FLYING_ATTITUDE_THROTTLE,
-        CTRL_FLYING_ATTITUDE_ALTITUDE,
+        CTRL_FLYING_THROTTLE,
+        CTRL_FLYING_ALTITUDE,
         CTRL_FLYING_POSITION
     } ctrl_mode_state_t;
 
-    ctrl_mode_state_t ctrl_mode = CTRL_FLYING_ATTITUDE_THROTTLE;
+    ctrl_mode_state_t ctrl_mode = CTRL_FLYING_ALTITUDE;
 
     // determine trim states and controls
     Veh.Trim(X, U, VelTrim, AltTrim, ThetaTrim, PsiTrim, LonTrim, LatTrim);
@@ -144,7 +144,7 @@ int main(int argc, char** argv)
     Vector3d ACC_STATIC;
     ACC_STATIC << 0.0, 0.0, 0.0;
     Vector3d GYR_STATIC;
-    GYR_STATIC << -0.1, -0.03, 0.21;
+    GYR_STATIC << 0.0, 0.0, 0.0;
 
     // initialise EKF object
     EKF EKF(X_EKF, ACC_STATIC, GYR_STATIC);
@@ -395,7 +395,7 @@ int main(int argc, char** argv)
                 // control mode switch (throttle)
                 if (inputs.ax10 == 1 && !ctrl_mode_switch_throttle)
                 {
-                    ctrl_mode = CTRL_FLYING_ATTITUDE_THROTTLE;
+                    ctrl_mode = CTRL_FLYING_THROTTLE;
                     ctrl_mode_switch_throttle = true;
                 }
                 else if (inputs.ax10 == 0)
@@ -406,7 +406,7 @@ int main(int argc, char** argv)
                 // control mode switch (altitude)
                 if (inputs.ax8 == 1 && !ctrl_mode_switch_altitude)
                 {
-                    ctrl_mode = CTRL_FLYING_ATTITUDE_ALTITUDE;
+                    ctrl_mode = CTRL_FLYING_ALTITUDE;
                     ctrl_mode_switch_altitude = true;
                 }
                 else if (inputs.ax8 == 0)
@@ -426,7 +426,7 @@ int main(int argc, char** argv)
                 }
 
                 // tilt mode only available in altitude or position hold mode
-                if (tilt_mode && ((ctrl_mode == CTRL_FLYING_ATTITUDE_ALTITUDE) || (ctrl_mode == CTRL_FLYING_POSITION)))
+                if (tilt_mode && ((ctrl_mode == CTRL_FLYING_ALTITUDE) || (ctrl_mode == CTRL_FLYING_POSITION)))
                 {
                     // convert joystick inputs into commands
                     throttle = 1.0 + inputs.ax3; // vertical velocity command (navigation frame)
@@ -585,11 +585,6 @@ int main(int argc, char** argv)
                         << X_EKF(3) << ", "
                         << X_EKF(4) << ", "
                         << X_EKF(5) << " | "
-                        << std::setprecision(3)
-                        << X_EKF(6) << ", "
-                        << X_EKF(7) << ", "
-                        << X_EKF(8) << ", "
-                        << X_EKF(9) << "| "
                         << euler(0) * RAD2DEG << ", "
                         << euler(1) * RAD2DEG << ", "
                         << euler(2) * RAD2DEG << " | "
@@ -601,23 +596,18 @@ int main(int argc, char** argv)
                         << ctrl_mode << ", "
                         << tilt_mode << std::endl;
 
-//                 std::cout << std::setprecision(3)
-//                         << std::fixed
-//                         << "TRU: "
-//                         << X(9) << ", "
-//                         << X(10) << ", "
-//                         << X(11) << " | "
-//                         << VelNav(0) << ", "
-//                         << VelNav(1) << ", "
-//                         << VelNav(2) << " | "
-//                         << std::setprecision(3)
-//                         << quat_truth(0) << ", "
-//                         << quat_truth(1) << ", "
-//                         << quat_truth(2) << ", "
-//                         << quat_truth(3) << "| "
-//                         << X(6) * RAD2DEG << ", "
-//                         << X(7) * RAD2DEG << ", "
-//                         << X(8) * RAD2DEG << std::endl;
+                std::cout << std::setprecision(3)
+                        << std::fixed
+                        << "TRU: "
+                        << X(9) << ", "
+                        << X(10) << ", "
+                        << X(11) << " | "
+                        << VelNav(0) << ", "
+                        << VelNav(1) << ", "
+                        << VelNav(2) << " | "
+                        << X(6) * RAD2DEG << ", "
+                        << X(7) * RAD2DEG << ", "
+                        << X(8) * RAD2DEG << std::endl;
 
                 i_log++; // increment log counter
             }
