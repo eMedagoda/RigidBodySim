@@ -45,8 +45,8 @@ class Controller
         double PitchControl(double pitch_command);
         double YawControl(double yaw_command);
         double YawRateControl(double yaw_rate_command);
-        Vector3d VelocityHold(double Vx_com, double Vy_com);
-        Vector3d PositionHold(double X_com, double Y_com);
+        Vector3d VelocityHold(double Vx_com, double Vy_com, double desired_vertical_force);
+        Vector3d PositionHold(double X_com, double Y_com, double desired_vertical_force);
 
         VectorXd ControlMap(VectorXd H);
         VectorXd ControlMap2(VectorXd H);
@@ -56,7 +56,6 @@ class Controller
         double IntegrateScalar(double dydx_new, double dydx, double y);
 
         double m_DT;
-        VectorXd m_H;
 
         double m_roll;
         double m_pitch;

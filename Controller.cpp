@@ -23,13 +23,6 @@ m_vel_y(0.0),
 m_vel_horizontal(0.0)
 {
     m_DT = DT;
-
-    m_H = VectorXd(5);
-    m_H(0) = 19.0;
-    m_H(1) = 19.0;
-    m_H(2) = 6.5;
-    m_H(3) = 0.0;
-    m_H(4) = 0.0;
 }
 
 Controller::~Controller()
@@ -77,9 +70,6 @@ VectorXd Controller::RunController(VectorXd X_COM, VectorXd X_PVA, bool tilt_mod
     {
         dU = FlyPosition(X_COM, tilt_mode);
     }
-
-    // calculate motor and servo commands
-    m_H = Actuators(dU);
 
     return dU;
 }
@@ -475,14 +465,14 @@ VectorXd Controller::FlyAttitudeAltitude(VectorXd X_COM, bool tilt_mode)
             }
             else
             {
-                attitude_commands = VelocityHold(Vx_com, Vy_com); // command vehicle speed (outputs roll command and pitch command)
+                attitude_commands = VelocityHold(Vx_com, Vy_com, desired_vertical_force); // command vehicle speed (outputs roll command and pitch command)
             }
 
         }
 
         if (pos_hold_state == POS_HOLD_POSITION) // if in position hold state
         {
-            attitude_commands = PositionHold(X_com, Y_com); // run position control (outputs roll command and pitch command)
+            attitude_commands = PositionHold(X_com, Y_com, desired_vertical_force); // run position control (outputs roll command and pitch command)
         }
     }
     else // if stick commands have been issued (manoeuvre command - direct roll and pitch angle commands)
@@ -761,13 +751,10 @@ double Controller::YawRateControl(double yaw_rate_command)
     return Mz;
 }
 
-Vector3d Controller::VelocityHold(double Vx_com, double Vy_com)
+Vector3d Controller::VelocityHold(double Vx_com, double Vy_com, double desired_vertical_force)
 {
     Vector3d attitude_commands;
     attitude_commands.setZero();
-
-    // total vertical force (body axis, magnitude)
-    double force_sum = (m_H(0) * cos(-m_H(4)) + m_H(1) * cos(m_H(4)) + m_H(2));
 
     // align velocity to current heading
     double vel_x_body = cos(m_yaw) * m_vel_x + sin(m_yaw) * m_vel_y; // heading aligned LVLH forward velocity
@@ -780,10 +767,10 @@ Vector3d Controller::VelocityHold(double Vx_com, double Vy_com)
     double Ay_com = g_vel * (Vy_com - vel_y_body);
 
     // roll angle command and limiter
-    double temp_roll_rat = (MASS * Ay_com) / force_sum;
+    double temp_roll_rat = (MASS * Ay_com) / desired_vertical_force;
 
     // roll angle command (positive Ay_com -> positive roll)
-    double roll_command = asin(temp_roll_rat);
+    double roll_command = atan(temp_roll_rat);
 
     // roll command limiter
     if (roll_command > roll_command_limit)
@@ -797,10 +784,10 @@ Vector3d Controller::VelocityHold(double Vx_com, double Vy_com)
     }
 
     // pitch angle command and limiter
-    double temp_pitch_rat = (MASS * -Ax_com) / (force_sum * cos(m_roll));
+    double temp_pitch_rat = (MASS * -Ax_com) / (desired_vertical_force);
 
     // pitch angle command (positive Ax_com -> negative pitch)
-    double pitch_command = asin(temp_pitch_rat);
+    double pitch_command = atan(temp_pitch_rat);
 
     // pitch command limiter
     if (pitch_command > pitch_command_limit)
@@ -820,7 +807,7 @@ Vector3d Controller::VelocityHold(double Vx_com, double Vy_com)
     return attitude_commands;
 }
 
-Vector3d Controller::PositionHold(double X_com, double Y_com)
+Vector3d Controller::PositionHold(double X_com, double Y_com, double desired_vertical_force)
 {
     Vector3d attitude_commands;
     attitude_commands.setZero();
@@ -893,7 +880,7 @@ Vector3d Controller::PositionHold(double X_com, double Y_com)
         Vy_com = -planar_vel_limit;
     }
 
-    attitude_commands = VelocityHold(Vx_com, Vy_com);
+    attitude_commands = VelocityHold(Vx_com, Vy_com, desired_vertical_force);
 
     return attitude_commands;
 }
