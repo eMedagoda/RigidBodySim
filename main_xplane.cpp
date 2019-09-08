@@ -117,7 +117,7 @@ int main(int argc, char** argv)
         CTRL_FLYING_POSITION
     } ctrl_mode_state_t;
 
-    ctrl_mode_state_t ctrl_mode = CTRL_FLYING_ALTITUDE;
+    ctrl_mode_state_t ctrl_mode = CTRL_FLYING_POSITION;
 
     // determine trim states and controls
     Veh.Trim(X, U, VelTrim, AltTrim, ThetaTrim, PsiTrim, LonTrim, LatTrim);
@@ -256,14 +256,6 @@ int main(int argc, char** argv)
 
 	// Set position of the player aircraft
 	sendPOSI(sock, POSI, 7, 0);
-
-// 	// pauseSim
-// 	pauseSim(sock, 1); // Sending 1 to pause
-// 	sleep(5); // Pause for 5 seconds
-//
-// 	// Unpause
-// 	pauseSim(sock, 0); // Sending 0 to unpause
-// 	printf("- Resuming Simulation\n");
 
     const char* dref = "sim/operation/override/override_planepath"; // flight model overide data reference
 	float result[8] = {1,0,0,0,0,0,0,0};

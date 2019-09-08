@@ -800,8 +800,8 @@ Vector3d Controller::VelocityHold(double Vx_com, double Vy_com, double desired_v
         pitch_command = -pitch_command_limit;
     }
 
-    attitude_commands(0) = RollControl(roll_command);
-    attitude_commands(1) = PitchControl(pitch_command);
+    attitude_commands(0) = roll_command;
+    attitude_commands(1) = pitch_command;
     attitude_commands(2) = Ax_com * MASS;
 
     return attitude_commands;
